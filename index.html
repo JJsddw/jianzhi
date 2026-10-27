@@ -144,6 +144,7 @@
   .fg-need.ok{color:#0F6E56;font-weight:600;}
   .fg-need.free{color:#b8860b;font-weight:700;}
   .food-item .fn.free{color:#8a5a1e;font-weight:600;}
+  .food-item .fmacro{display:block;font-size:10.5px;color:var(--hint);margin-top:2px;font-variant-numeric:tabular-nums;font-weight:400;}
   .custom-legend{font-size:12px;color:var(--muted);margin:10px 0 2px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;}
   .custom-legend .lg{display:flex;align-items:center;gap:5px;}
   .custom-legend .sw{width:10px;height:10px;border-radius:3px;display:inline-block;}
@@ -974,7 +975,13 @@ function calcCustom(){
       gShow=p.grams>=100?R(p.grams):(p.grams>=50?R(p.grams):p.grams.toFixed(0));
     }
     const freeCls=(p.free&&!p.add)?' free':'';
-    html+=`<div class="food-item"><span class="fn${addCls}${freeCls}">${p.name}${badge}<br><span style="font-size:11px;color:var(--muted)">${roleTag}</span></span>`+
+    // 该份食物（最终推荐克数）所含三大宏量：优先用最终克数(建议量/加减后)推算
+    const finalG=(p.free?(p.grams+p.addGrams):(p.grams-p.reduceGrams+p.addGrams));
+    const fc2=finalG/100;
+    const mC=p.f.carb*fc2, mP=p.f.p*fc2, mF=p.f.f*fc2;
+    const mKcal=Math.round(mC*4+mP*4+mF*9);
+    const macroLine=`<span class="fmacro">蛋白 ${R(mP)}g · 碳水 ${R(mC)}g · 脂肪 ${R(mF)}g · ${mKcal}kcal</span>`;
+    html+=`<div class="food-item"><span class="fn${addCls}${freeCls}">${p.name}${badge}<br><span style="font-size:11px;color:var(--muted)">${roleTag}</span>${macroLine}</span>`+
       `<span><span class="fg">${gShow} g</span>${needTag}</span></div>`;
   });
   const tKcal=Math.round(tgt.carb*4+tgt.prot*4+tgt.fat*9);

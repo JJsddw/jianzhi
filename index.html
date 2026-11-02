@@ -707,6 +707,15 @@ function computeCustomMatched(matched, tgt){
   const overMK=new Set();
   mkL.forEach(mk=>{ if(sumFixed[mk]>tgt[mk]*1.2)overMK.add(mk); });
   const DENSITY_MIN={carb:20,prot:18,fat:20};
+  // ===== 蔬菜合计封顶（健身人群常识）=====
+  // 健身人群每日蔬菜 400-600g，单餐约 130-250g。多种蔬菜累积的蛋白/碳水会"抵扣"肉类份量，
+  // 导致"菜比肉多"。故对蔬菜合计设上限：free(推荐量)蔬菜均摊剩余额度，超出不再加量，
+  // 蛋白缺口自然由肉蛋补足。已填(非free)蔬菜尊重用户输入，从额度中扣除。
+  const isVeg=f=>f.c==='蔬菜';
+  const VEG_CAP=250;
+  let fixedVegG=0, nFreeVeg=0;
+  userItems.forEach(it=>{ if(!isVeg(it.f))return; if(it.free) nFreeVeg++; else fixedVegG+=Math.min(it.grams,portionOf(it.f).max); });
+  const perFreeVegCap = nFreeVeg>0 ? Math.max(40, Math.round((VEG_CAP-fixedVegG)/nFreeVeg)) : 999;
   // ===== 统一求解：坐标下降(凸二次精确1D) 最小化三大宏量+热量相对误差 =====
   // 关键：用户明确挑选的食材必须有「有意义的份量」，绝不能被优化器削到 0g 而改推别的食材；
   //   多种同类食材(如4种蛋白)要份量均衡、且与补齐其他角色的侧食合计精确达标。
@@ -745,7 +754,7 @@ function computeCustomMatched(matched, tgt){
     let mx=0; userItems.forEach(it=>{
       if(mainRole(it.f)!==mk) return; const pf=portionOf(it.f);
       const dense=it.f[macroKey[mk]]>=DENSITY_MIN[mk];
-      let g; if(it.free) g=pf.max;                 // free 可长到上限
+      let g; if(it.free) g=isVeg(it.f)?perFreeVegCap:pf.max;   // free 可长到上限(蔬菜受封顶约束)
         else if(it.grams>=pf.max) g=pf.max;        // 已达/超上限 → 锁定上限
         else if(dense) g=pf.max;                    // 高密度未达上限 → 可长到上限
         else g=Math.min(it.grams,pf.max);           // 低密度 → 锁定实值
@@ -760,8 +769,9 @@ function computeCustomMatched(matched, tgt){
     // 当前缩放下，用户 free 食材的「全宏量」贡献(含跨角色交叉) 与 「主角色」贡献
     const uFull={carb:0,prot:0,fat:0}, uMain={carb:0,prot:0,fat:0};
     userItems.forEach(it=>{ if(it.free){ const pf=portionOf(it.f); const mr=mainRole(it.f);
-      const fl=Math.min(pf.max,Math.max(40,Math.round(pf.ideal*0.3)));
-      const g=Math.min(pf.max, Math.max(fl,Math.round(pf.ideal*roleScale[mr])));
+      const vCap=isVeg(it.f)?perFreeVegCap:pf.max;   // free 蔬菜受合计封顶约束
+      const fl=Math.min(vCap,Math.max(40,Math.round(pf.ideal*0.3)));
+      const g=Math.min(vCap, Math.max(fl,Math.round(pf.ideal*roleScale[mr])));
       ['carb','prot','fat'].forEach(k=>{ const v=it.f[macroKey[k]]*g/100; uFull[k]+=v; });
       uMain[mr]+=it.f[macroKey[mr]]*g/100; } });
     // 决定侧食：仅对「该角色即使拉满也够不到目标」的角色补侧食；净缺口 = 剩余目标 - free全贡献 - 其他侧食污染
@@ -791,12 +801,13 @@ function computeCustomMatched(matched, tgt){
     const pf=portionOf(it.f); const mr=mainRole(it.f);
     let base,ub,lb;
     if(it.free){ const pf2=portionOf(it.f);
-      const gIdeal=Math.min(pf2.max, Math.round(pf2.ideal*roleScale[mr]));
+      const vCap=isVeg(it.f)?perFreeVegCap:pf2.max;   // free 蔬菜受合计封顶约束
+      const gIdeal=Math.min(vCap, Math.round(pf2.ideal*roleScale[mr]));
       let g;
-      if(roleNeedsSide[mr]){ const fl=Math.min(pf2.max,Math.max(40,Math.round(pf2.ideal*0.3)));
-        g=Math.min(pf2.max, Math.max(fl,gIdeal)); }          // 供给不足：保持有意义份量下限(用户食材不被削到无意义)
+      if(roleNeedsSide[mr]){ const fl=Math.min(vCap,Math.max(40,Math.round(pf2.ideal*0.3)));
+        g=Math.min(vCap, Math.max(fl,gIdeal)); }          // 供给不足：保持有意义份量下限(用户食材不被削到无意义)
       else g=Math.max(8, gIdeal);                            // 已充分覆盖：允许缩小以精确配平(避免多食材同类超标)
-      base=g; ub=g; lb=g; }  // 锁定份量(放大不超类别上限)
+      base=g; ub=g; lb=g; }  // 锁定份量(放大不超类别上限/蔬菜封顶)
     else if(it.grams>=pf.max){
       if(overMK.has(mr)){ base=pf.max; ub=pf.max; lb=Math.max(10,Math.round(it.grams*0.3)); }
       else { base=pf.max; ub=pf.max; lb=pf.max; }
@@ -897,20 +908,20 @@ function computeCustomMatched(matched, tgt){
     const reduceGrams=Math.max(0, it.grams-finalG);
     const addGrams=Math.max(0, finalG-it.grams);
     plan.push({name:it.name, grams:it.grams, addGrams, reduceGrams, free:it.free,
-      carb:it.f.carb*fc, prot:it.f.p*fc, fat:it.f.f*fc,
+      carb:it.f.carb*fc, prot:it.f.p*fc, fat:it.f.f*fc, fiber:(it.f.fiber||0)*fc, vc:(it.f.vc||0)*fc,
       role:mainRole(it.f), add:false, roleAdd:null, f:it.f});
   });
   ['carb','prot','fat'].forEach(mk=>{
     if(newAdd[mk]>=MIN_NEW && newRef[mk]){
       const f=newRef[mk]; const fc=newAdd[mk]/100;
       plan.push({name:foodName(f), grams:newAdd[mk], addGrams:0, reduceGrams:0,
-        carb:f.carb*fc, prot:f.p*fc, fat:f.f*fc,
+        carb:f.carb*fc, prot:f.p*fc, fat:f.f*fc, fiber:(f.fiber||0)*fc, vc:(f.vc||0)*fc,
         role:mainRole(f), add:true, roleAdd:mk, f:f});
     }
   });
-  let ac=0,ap=0,af=0,ak=0;
-  plan.forEach(p=>{ ac+=p.carb; ap+=p.prot; af+=p.fat; ak+=p.carb*4+p.prot*4+p.fat*9; });
-  return {plan, ac, ap, af, ak, addInfo, cur:{carb:0,prot:0,fat:0}, deficit:{}, reduceAdvice:finalReduce,
+  let ac=0,ap=0,af=0,ak=0,aFiber=0,aVc=0;
+  plan.forEach(p=>{ ac+=p.carb; ap+=p.prot; af+=p.fat; ak+=p.carb*4+p.prot*4+p.fat*9; aFiber+=(p.fiber||0); aVc+=(p.vc||0); });
+  return {plan, ac, ap, af, ak, aFiber, aVc, addInfo, cur:{carb:0,prot:0,fat:0}, deficit:{}, reduceAdvice:finalReduce,
     _dbg:{feasible, gs, b:null, newAdd, userFinal, repIdx:null}};
 }
 
@@ -933,7 +944,7 @@ function calcCustom(){
   const tgt = {carb:T.carb*customRatio, prot:T.prot*customRatio, fat:T.fat*customRatio};
 
   const res = computeCustomMatched(matched, tgt);
-  const {plan, ac, ap, af, ak, addInfo, reduceAdvice} = res;
+  const {plan, ac, ap, af, ak, aFiber, aVc, addInfo, reduceAdvice} = res;
 
   let html='';
   // 未知食材提示
@@ -992,7 +1003,9 @@ function calcCustom(){
     `<span>热量 <b>${R(ak)}</b> / ${tKcal} kcal ${diffTag(ak,tKcal)}</span>`+
     `<span>碳水 <b>${R(ac)}</b> / ${R(tgt.carb)}g ${diffTag(ac,tgt.carb)}</span>`+
     `<span>蛋白 <b>${R(ap)}</b> / ${R(tgt.prot)}g ${diffTag(ap,tgt.prot)}</span>`+
-    `<span>脂肪 <b>${R(af)}</b> / ${R(tgt.fat)}g ${diffTag(af,tgt.fat)}</span></div></div>`;
+    `<span>脂肪 <b>${R(af)}</b> / ${R(tgt.fat)}g ${diffTag(af,tgt.fat)}</span>`+
+    `<span>膳食纤维 <b>${R(aFiber)}</b> / 9g ${diffTag(aFiber,9)}</span>`+
+    `<span>维C <b>${R(aVc)}</b> / 33mg ${diffTag(aVc,33)}</span></div></div>`;
 
   // 说明（只填名称模式：用户所选食材推荐量已在上方列出，此处仅提示需补充的其他食物）
   const reduceParts = reduceAdvice.map(ra=>{

@@ -107,6 +107,9 @@
   /* 折叠面板 */
   #foodTableWrap{overflow:hidden;transition:max-height .3s ease,opacity .25s ease;max-height:2000px;opacity:1;}
   #foodTableWrap.collapsed{max-height:0;opacity:0;margin:0;}
+  .collapse-wrap{overflow:hidden;transition:max-height .35s ease,opacity .25s ease;max-height:6000px;opacity:1;}
+  .collapse-wrap.collapsed{max-height:0;opacity:0;margin:0;}
+  .sec-title .fold-btn{margin-left:auto;font-size:13px;padding:6px 16px;}
   /* 自定义一餐 */
   .custom-input{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;}
   .custom-input .field{min-width:200px;}
@@ -114,6 +117,20 @@
   .custom-input input[type=text]:focus{border-color:var(--carb);}
   #customFoods{width:100%;font-size:15px;padding:10px 12px;border:1px solid var(--line2);border-radius:10px;outline:none;box-sizing:border-box;}
   #customFoods:focus{border-color:var(--carb);}
+  .custom-hist{margin-bottom:12px;}
+  .custom-hist:empty{display:none;}
+  .hist-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;}
+  .hist-clear{background:transparent;border:1px solid var(--line2);border-radius:6px;color:var(--muted);font-size:11px;padding:2px 8px;cursor:pointer;}
+  .hist-clear:hover{color:#c0392b;border-color:#c0392b;}
+  .hist-chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .hist-item{display:inline-flex;align-items:center;max-width:100%;border:1px solid var(--line2);border-radius:14px;background:#F2F6FA;overflow:hidden;}
+  .hist-item .hist-chip{border:none;border-radius:0;background:transparent;flex:1;min-width:0;}
+  .hist-item .hist-chip:hover{background:#E6F1FB;}
+  .hist-del{background:transparent;border:none;border-left:1px solid var(--line2);color:var(--muted);font-size:14px;line-height:1;padding:0 8px;cursor:pointer;align-self:stretch;}
+  .hist-del:hover{color:#fff;background:#c0392b;}
+  .hist-chip{background:#F2F6FA;border:1px solid var(--line2);border-radius:14px;color:#2c5a86;font-size:12px;padding:5px 12px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .hist-chip:hover{background:#E6F1FB;border-color:var(--carb);}
+  .hist-empty{font-size:11px;color:var(--hint);padding:2px 0;}
   .custom-input .meal-sel{display:flex;gap:6px;flex-wrap:wrap;}
   .meal-sel .msbtn{background:transparent;border:1px solid var(--line2);border-radius:8px;color:var(--muted);font-size:13px;padding:7px 14px;cursor:pointer;}
   .meal-sel .msbtn.active{background:#E6F1FB;border-color:var(--carb);color:var(--carb);}
@@ -202,8 +219,10 @@
   <!-- 2. 三餐搭配推荐 -->
   <div class="card">
     <div class="sec-title">三餐搭配推荐 <small>随目标动态调整份量</small>
-      <button id="refreshBtn" onclick="refreshMeals()" style="margin-left:auto;font-size:13px;padding:6px 16px;">🔄 刷新推荐</button>
+      <button id="refreshBtn" onclick="refreshMeals()" style="font-size:13px;padding:6px 16px;">🔄 刷新推荐</button>
+      <button id="toggleMealsBtn" class="fold-btn" onclick="toggleSection('mealsWrap','toggleMealsBtn')">▶ 展开</button>
     </div>
+    <div id="mealsWrap" class="collapse-wrap collapsed">
     <div class="meals" id="meals"></div>
     <div class="day-sum" id="daySum"></div>
     <div class="salt-tip">🧂 每日盐摄入建议控制在 <b>6–8 克</b>（约一啤酒瓶盖量），减脂期更应少盐，有助于控制血压与水肿。</div>
@@ -215,11 +234,15 @@
       ⑤ <b>每餐有蔬菜</b>——保证膳食纤维、维生素 C 与植物化学物摄入；
       ⑤ <b>脂肪来源分散</b>——坚果/深海鱼/蛋类提供优质脂肪与微量元素，避免单餐脂肪过高影响消化。
     </div>
+    </div>
   </div>
 
   <!-- 2.5 自定义一餐菜单 -->
   <div class="card">
-    <div class="sec-title">自定义一餐菜单 <small>输入食材名称，系统推荐这一餐该吃多少克</small></div>
+    <div class="sec-title">自定义一餐菜单 <small>输入食材名称，系统推荐这一餐该吃多少克</small>
+      <button id="toggleCustomBtn" class="fold-btn" onclick="toggleSection('customWrap','toggleCustomBtn')">▶ 展开</button>
+    </div>
+    <div id="customWrap" class="collapse-wrap collapsed">
     <div class="custom-input">
       <div class="field">
         <label>选择餐次 <span style="color:var(--hint)">（决定该餐目标量）</span></label>
@@ -234,6 +257,7 @@
       <label>输入食材 <span style="color:var(--hint)">（用逗号/空格/顿号分隔多个食材，如：鸡胸肉, 米饭, 西兰花，克数由系统推荐）</span></label>
       <input id="customFoods" type="text" placeholder="例如：鸡胸肉, 米饭(熟), 西兰花, 杏仁">
     </div>
+    <div id="customHist" class="custom-hist"></div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
       <button class="btn" onclick="calcCustom()">计算这一餐</button>
       <button class="reset-btn" onclick="resetCustom()">↺ 重置</button>
@@ -241,6 +265,7 @@
     <div class="custom-hint" id="customHint" style="font-size:12px;color:var(--muted);margin-bottom:10px;"></div>
     <div class="salt-tip">🧂 每日盐摄入建议控制在 <b>6–8 克</b>（约一啤酒瓶盖量），减脂期更应少盐，有助于控制血压与水肿。</div>
     <div class="custom-out" id="customOut"></div>
+    </div>
   </div>
 
   <!-- 3. 食物参考表 -->
@@ -537,7 +562,7 @@ function refreshMeals(){
 function renderMeals(T){
   const box = document.getElementById('meals');
   box.innerHTML='';
-  let dayCarb=0, dayProt=0, dayFat=0, dayKcal=0;
+  let dayCarb=0, dayProt=0, dayFat=0, dayKcal=0, dayFiber=0, dayVc=0;
 
   // 早餐：固定搭配（鸡蛋+牛奶+水果），主食按碳水定量；小体重时主食做下限保护(≥30g)
   const bfm = mealSlots.bf, bfp = currentPick.bf;
@@ -562,6 +587,7 @@ function renderMeals(T){
     const f=gr/100; const gShow=gr>=100?R(gr):(gr>=50?R(gr):gr.toFixed(0));
     bfHtml += `<div class="food-item"><span class="fn">${foodName(base)}<br><span style="font-size:11px;color:var(--muted)">${note}</span></span><span class="fg">${gShow} g</span></div>`;
   });
+  bfItems.forEach(([base,gr])=>{ dayFiber+=(base.fiber||0)*gr/100; dayVc+=(base.vc||0)*gr/100; });
   bfHtml += `<div class="meal-macro"><span>热量 <b>${R(bfC*4+bfP*4+bfF*9)}</b> kcal</span>`+
     `<span>碳水 <b>${R(bfC)}</b>g</span><span>蛋白 <b>${R(bfP)}</b>g</span><span>脂肪 <b>${R(bfF)}</b>g</span></div></div>`;
   box.insertAdjacentHTML('beforeend', bfHtml);
@@ -582,6 +608,8 @@ function renderMeals(T){
     const mp=staple.p*r.gStaple/100+prot.p*r.gProt/100+fat.p*r.gFat/100+fixed.p*ff;
     const mf=staple.f*r.gStaple/100+prot.f*r.gProt/100+fat.f*r.gFat/100+fixed.f*ff;
     dayCarb+=mc; dayProt+=mp; dayFat+=mf; dayKcal+=mc*4+mp*4+mf*9;
+    dayFiber+=staple.fiber*r.gStaple/100+prot.fiber*r.gProt/100+fat.fiber*r.gFat/100+fixed.fiber*ff;
+    dayVc+=(staple.vc||0)*r.gStaple/100+(prot.vc||0)*r.gProt/100+(fat.vc||0)*r.gFat/100+(fixed.vc||0)*ff;
     const mkcal=mc*4+mp*4+mf*9;
     const items=[
       [staple, r.gStaple, m.staple.note],
@@ -607,8 +635,19 @@ function renderMeals(T){
       `<span>热量 <b>${R(dayKcal)}</b> / ${tgtKcal} kcal</span>`+
       `<span>碳水 <b>${R(dayCarb)}</b> / ${tgtCarb}g</span>`+
       `<span>蛋白 <b>${R(dayProt)}</b> / ${tgtProt}g</span>`+
-      `<span>脂肪 <b>${R(dayFat)}</b> / ${tgtFat}g</span>`;
+      `<span>脂肪 <b>${R(dayFat)}</b> / ${tgtFat}g</span>`+
+      `<span>膳食纤维 <b>${R(dayFiber)}</b> / 25–30g</span>`+
+      `<span>维C <b>${R(dayVc)}</b> / 100mg</span>`;
   }
+}
+
+/* ---------- 通用区块折叠 ---------- */
+function toggleSection(wrapId, btnId){
+  const wrap = document.getElementById(wrapId);
+  const btn = document.getElementById(btnId);
+  if(!wrap||!btn) return;
+  const collapsed = wrap.classList.toggle('collapsed');
+  btn.textContent = collapsed ? '▶ 展开' : '▼ 隐藏';
 }
 
 /* ---------- 食物参考表折叠 ---------- */
@@ -626,13 +665,52 @@ function toggleFoodTable(){
    ③ 汇总实际宏量(含副宏量)，与目标对比；缺口的宏量给出「建议添加食材」。
    ④ 完全缺失的角色(如没放脂肪来源)直接提示补充。 */
 let customRatio = 0.25;   // 当前选中餐次的比例
+let curCustomMeal = 'bf'; // 当前选中餐次(bf/ln/dn)
 document.querySelectorAll('#customMealSel .msbtn').forEach(b=>{
   b.addEventListener('click',()=>{
     document.querySelectorAll('#customMealSel .msbtn').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
     customRatio = parseFloat(b.dataset.ratio);
+    curCustomMeal = b.dataset.meal;
+    renderCustomHist();
   });
 });
+
+/* ---------- 自定义菜单输入历史（按餐次，本地存储，各存3条） ---------- */
+const HIST_KEY='customMealHist_v1', HIST_MAX=3;
+function loadHist(){
+  try{ const o=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');
+    return {bf:(o.bf||[]),ln:(o.ln||[]),dn:(o.dn||[])}; }catch(e){ return {bf:[],ln:[],dn:[]}; }
+}
+function saveHist(h){ try{ localStorage.setItem(HIST_KEY,JSON.stringify(h)); }catch(e){} }
+function pushHist(meal,raw){
+  const v=raw.trim(); if(!v) return;
+  const h=loadHist(); const arr=h[meal]||[];
+  const idx=arr.indexOf(v); if(idx>=0) arr.splice(idx,1); // 去重置顶
+  arr.unshift(v); h[meal]=arr.slice(0,HIST_MAX); saveHist(h);
+}
+function renderCustomHist(){
+  const box=document.getElementById('customHist'); if(!box) return;
+  const h=loadHist(); const arr=h[curCustomMeal]||[];
+  const mealName=({bf:'早餐',ln:'午餐',dn:'晚餐'})[curCustomMeal];
+  if(!arr.length){ box.innerHTML=`<div class="hist-empty">暂无${mealName}记录，计算后自动保存最近 ${HIST_MAX} 条</div>`; return; }
+  let s=`<div class="hist-head"><span>最近${mealName}记录</span><button class="hist-clear" onclick="clearCustomHist()">清空</button></div><div class="hist-chips">`;
+  arr.forEach((v,i)=>{ const esc=v.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    s+=`<span class="hist-item"><button class="hist-chip" onclick="fillCustom('${esc}')">${v.replace(/</g,'&lt;')}</button>`+
+       `<button class="hist-del" title="删除此条" onclick="delHistItem('${curCustomMeal}',${i})">×</button></span>`; });
+  s+='</div>';
+  box.innerHTML=s;
+}
+function fillCustom(v){ const inp=document.getElementById('customFoods'); if(inp){ inp.value=v; inp.focus(); } }
+function delHistItem(meal,idx){
+  const h=loadHist(); const arr=h[meal]||[];
+  if(idx<0||idx>=arr.length) return;
+  arr.splice(idx,1); h[meal]=arr; saveHist(h);
+  if(meal===curCustomMeal) renderCustomHist();
+}
+function clearCustomHist(){
+  const h=loadHist(); h[curCustomMeal]=[]; saveHist(h); renderCustomHist();
+}
 
 /* 模糊匹配食材名：先去空格，包含关系即命中 */
 function matchFood(raw){
@@ -957,6 +1035,9 @@ function calcCustom(){
     out.innerHTML=html; hint.textContent=''; return;
   }
 
+  // 计算成功 → 记录到该餐次历史
+  pushHist(curCustomMeal, raw);
+
   // 渲染每样克数（建议添加食材用文本颜色区分）
   const mealName=({bf:'早餐',ln:'午餐',dn:'晚餐'})[document.querySelector('#customMealSel .msbtn.active').dataset.meal];
   html += `<div class="meal ln"><h4>你这一餐（${mealName}）</h4>`+
@@ -1003,9 +1084,7 @@ function calcCustom(){
     `<span>热量 <b>${R(ak)}</b> / ${tKcal} kcal ${diffTag(ak,tKcal)}</span>`+
     `<span>碳水 <b>${R(ac)}</b> / ${R(tgt.carb)}g ${diffTag(ac,tgt.carb)}</span>`+
     `<span>蛋白 <b>${R(ap)}</b> / ${R(tgt.prot)}g ${diffTag(ap,tgt.prot)}</span>`+
-    `<span>脂肪 <b>${R(af)}</b> / ${R(tgt.fat)}g ${diffTag(af,tgt.fat)}</span>`+
-    `<span>膳食纤维 <b>${R(aFiber)}</b> / 9g ${diffTag(aFiber,9)}</span>`+
-    `<span>维C <b>${R(aVc)}</b> / 33mg ${diffTag(aVc,33)}</span></div></div>`;
+    `<span>脂肪 <b>${R(af)}</b> / ${R(tgt.fat)}g ${diffTag(af,tgt.fat)}</span></div></div>`;
 
   // 说明（只填名称模式：用户所选食材推荐量已在上方列出，此处仅提示需补充的其他食物）
   const reduceParts = reduceAdvice.map(ra=>{
@@ -1073,6 +1152,7 @@ renderTable('all');
 renderActivity();
 buildPicks();
 recalc();
+renderCustomHist();
 </script>
 </body>
 </html>

@@ -54,6 +54,58 @@
   .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle;}
   .d-carb{background:var(--carb);} .d-prot{background:var(--prot);} .d-fat{background:var(--fat);} .d-kcal{background:#888;}
 
+  /* 用户档案（顶部登录态） */
+  .user-zone{margin:0 0 20px;}
+  .user-form{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fafbfc;}
+  .uf-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;}
+  .profile-inputs{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;}
+  .pfield{display:flex;flex-direction:column;}
+  .pfield label{font-size:11px;color:var(--muted);margin-bottom:4px;}
+  .pfield input{width:110px;font-size:15px;padding:8px 10px;border:1px solid var(--line2);border-radius:8px;outline:none;background:#fff;}
+  .pfield input:focus{border-color:var(--carb);}
+  #pName{width:130px;}
+  .psave{padding:9px 16px;font-size:13px;}
+  /* 档案表单内的性别按钮：比计算器区更紧凑 */
+  .profile-inputs .sex-sel{gap:6px;}
+  .profile-inputs .sexbtn{padding:7px 14px;font-size:13px;}
+  /* 已登录：头像胶囊 */
+  .user-logged{position:relative;display:inline-block;}
+  .avatar{display:inline-flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line2);border-radius:24px;padding:6px 14px 6px 6px;cursor:pointer;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .avatar:hover{border-color:var(--carb);box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  .av-face{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#2c5a86,#4a90c4);color:#fff;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .av-info{display:flex;flex-direction:column;align-items:flex-start;line-height:1.25;}
+  .av-name{font-size:14px;font-weight:600;color:var(--ink);}
+  .av-meta{font-size:11px;color:var(--muted);}
+  .av-caret{font-size:11px;color:var(--muted);}
+  /* 弹出菜单 */
+  .user-menu{position:absolute;top:calc(100% + 8px);left:0;z-index:50;background:var(--card);border:1px solid var(--line2);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:12px;min-width:220px;}
+  .um-title{font-size:11px;color:var(--hint);margin-bottom:8px;font-weight:600;}
+  .um-list{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;max-height:200px;overflow-y:auto;}
+  .um-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--ink);}
+  .um-item:hover{background:#f2f6fc;}
+  .um-item.active{background:#E6F1FB;color:var(--carb);font-weight:600;}
+  .um-item .ui-meta{font-size:11px;color:var(--muted);font-weight:400;}
+  .um-item .ui-cur{font-size:10px;color:var(--carb);background:#E6F1FB;border-radius:6px;padding:2px 6px;font-weight:600;}
+  .um-actions{display:flex;gap:8px;border-top:1px solid var(--line);padding-top:10px;}
+  .um-btn{flex:1;border-radius:8px;font-size:12px;padding:8px 10px;cursor:pointer;font-weight:600;border:1px solid var(--line2);background:#fff;color:var(--ink);}
+  .um-btn.add:hover{border-color:var(--carb);color:var(--carb);background:#f2f9ff;}
+  .um-btn.del:hover{border-color:#c0392b;color:#c0392b;background:#fff5f5;}
+  @media(max-width:720px){.profile-inputs{flex-direction:column;align-items:stretch;}.pfield input,#pName{width:100%;}.user-menu{min-width:200px;}}
+
+  /* TDEE */
+  .tdee-box{margin-top:18px;border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff8f5;}
+  .tdee-title{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--ink);}
+  .tdee-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .tdee-card{border-radius:10px;padding:12px;text-align:center;background:#fff;border:1px solid var(--line);}
+  .tdee-card.hi{background:#fff2ee;border-color:#f0c4b0;}
+  .tdee-card .tl{font-size:11px;color:var(--muted);margin-bottom:4px;}
+  .tdee-card .tv{font-size:22px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .tdee-card.hi .tv{color:#c0392b;}
+  .tdee-card .tu{font-size:11px;color:var(--hint);margin-top:2px;}
+  .tdee-note{margin-top:12px;font-size:12px;line-height:1.6;color:var(--muted);padding-top:10px;border-top:1px dashed var(--line);}
+  .tdee-note b{color:var(--ink);}
+  @media(max-width:720px){.tdee-row{grid-template-columns:1fr;}}
+
   /* meal plan */
   .meals{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
   .meal{border-radius:12px;padding:16px;border:1px solid var(--line);}
@@ -180,9 +232,46 @@
   <h1>谭成义减脂规划期</h1>
   <p class="sub">输入体重 → 计算每日摄入目标 → 自动生成健康三餐搭配 · 附食物营养参考表</p>
 
+  <!-- 用户档案（顶部登录态）：未登录=表单；已登录=头像胶囊，点击弹出菜单 -->
+  <div class="user-zone" id="userZone">
+    <!-- 未登录：输入表单 -->
+    <div class="user-form" id="userForm">
+      <div class="uf-title">👤 用户档案 <span style="color:var(--hint);font-weight:400">（名字/性别/身高/年龄，保存后缩为头像）</span></div>
+      <div class="profile-inputs">
+        <div class="pfield"><label>名字</label><input id="pName" type="text" placeholder="如：鸡仔" maxlength="12"></div>
+        <div class="pfield"><label>性别</label>
+          <div class="sex-sel" id="sexRow">
+            <button class="sexbtn active" data-sex="male">男性</button>
+            <button class="sexbtn" data-sex="female">女性</button>
+          </div>
+        </div>
+        <div class="pfield"><label>身高</label><div style="display:flex;align-items:center;gap:6px;"><input id="pHeight" type="number" value="175" min="100" max="250" step="1"><span class="unit" style="padding-bottom:10px;">cm</span></div></div>
+        <div class="pfield"><label>年龄</label><div style="display:flex;align-items:center;gap:6px;"><input id="pAge" type="number" value="25" min="10" max="100" step="1"><span class="unit" style="padding-bottom:10px;">岁</span></div></div>
+        <button class="btn psave" onclick="saveProfile()">保存档案</button>
+      </div>
+    </div>
+    <!-- 已登录：头像 + 弹出菜单 -->
+    <div class="user-logged" id="userLogged" style="display:none;">
+      <button class="avatar" id="avatarBtn" onclick="toggleUserMenu()">
+        <span class="av-face" id="avFace">鸡</span>
+        <span class="av-info"><span class="av-name" id="avName">鸡仔</span><span class="av-meta" id="avMeta">175cm · 25岁</span></span>
+        <span class="av-caret">▾</span>
+      </button>
+      <div class="user-menu" id="userMenu" style="display:none;">
+        <div class="um-title">切换用户</div>
+        <div class="um-list" id="umList"></div>
+        <div class="um-actions">
+          <button class="um-btn add" onclick="showUserForm()">＋ 新增用户</button>
+          <button class="um-btn del" onclick="delCurrentUser()">🗑 删除当前用户</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 1. 摄入计算器 -->
   <div class="card">
     <div class="sec-title">每日摄入目标 <small>按体重 + 运动量动态计算</small></div>
+
     <div class="calc-row">
       <div class="field">
         <label>体重</label>
@@ -190,13 +279,6 @@
           <input id="weight" type="number" value="70" min="30" max="200" step="0.1" oninput="recalc()">
           <span class="unit">kg</span>
         </div>
-      </div>
-    </div>
-    <div class="field" style="margin-top:16px;">
-      <label>性别 <span style="color:var(--hint)">（决定系数基准，男性 / 女性）</span></label>
-      <div class="sex-sel" id="sexRow">
-        <button class="sexbtn active" data-sex="male">男性</button>
-        <button class="sexbtn" data-sex="female">女性</button>
       </div>
     </div>
     <div class="field" style="margin-top:16px;">
@@ -214,35 +296,23 @@
       <div class="tcard"><div class="lbl"><span class="dot d-fat"></span>脂肪</div><div class="val" id="tFat">70</div><div class="unit2">克 / 天</div></div>
       <div class="tcard"><div class="lbl"><span class="dot d-kcal"></span>总热量</div><div class="val" id="tKcal">2871</div><div class="unit2">kcal / 天</div></div>
     </div>
-  </div>
 
-  <!-- 2. 三餐搭配推荐 -->
-  <div class="card">
-    <div class="sec-title">三餐搭配推荐 <small>随目标动态调整份量</small>
-      <button id="refreshBtn" onclick="refreshMeals()" style="font-size:13px;padding:6px 16px;">🔄 刷新推荐</button>
-      <button id="toggleMealsBtn" class="fold-btn" onclick="toggleSection('mealsWrap','toggleMealsBtn')">▶ 展开</button>
-    </div>
-    <div id="mealsWrap" class="collapse-wrap collapsed">
-    <div class="meals" id="meals"></div>
-    <div class="day-sum" id="daySum"></div>
-    <div class="salt-tip">🧂 每日盐摄入建议控制在 <b>6–8 克</b>（约一啤酒瓶盖量），减脂期更应少盐，有助于控制血压与水肿。</div>
-    <div class="basis">
-      <b>搭配依据：</b>① <b>能量分配</b>——早 30% / 午 40% / 晚 30%，符合中国居民膳食指南「三餐合理分配」建议；
-      ② <b>精确对齐</b>——每餐用联立方程求解食材克数，使该餐宏量精确等于「全天目标 × 餐次比例」，三餐合计严格 = 计算器目标，不超标；
-      ③ <b>蛋白质均分</b>——每餐 30–45g 优质蛋白，可最大化肌肉蛋白质合成（肌少症研究建议每餐≥25–30g）；
-      ④ <b>主食粗细搭配</b>——全麦/薯类占主食 1/3，提供膳食纤维与更低升糖指数；
-      ⑤ <b>每餐有蔬菜</b>——保证膳食纤维、维生素 C 与植物化学物摄入；
-      ⑤ <b>脂肪来源分散</b>——坚果/深海鱼/蛋类提供优质脂肪与微量元素，避免单餐脂肪过高影响消化。
-    </div>
+    <!-- TDEE 每日热量消耗 -->
+    <div class="tdee-box">
+      <div class="tdee-title">🔥 每日热量消耗（TDEE）<span style="color:var(--hint);font-weight:400;font-size:11px;">　BMR × 活动系数</span></div>
+      <div class="tdee-row">
+        <div class="tdee-card"><div class="tl">基础代谢 BMR</div><div class="tv" id="tBmr">1705</div><div class="tu">kcal / 天</div></div>
+        <div class="tdee-card hi"><div class="tl">每日消耗 TDEE</div><div class="tv" id="tTdee">2640</div><div class="tu">kcal / 天</div></div>
+        <div class="tdee-card"><div class="tl">摄入 − 消耗</div><div class="tv" id="tGap">+231</div><div class="tu" id="tGapLbl">盈余</div></div>
+      </div>
+      <div class="tdee-note" id="tdeeNote"></div>
     </div>
   </div>
 
-  <!-- 2.5 自定义一餐菜单 -->
+  <!-- 2. 自定义一餐菜单（默认常显，不折叠） -->
   <div class="card">
-    <div class="sec-title">自定义一餐菜单 <small>输入食材名称，系统推荐这一餐该吃多少克</small>
-      <button id="toggleCustomBtn" class="fold-btn" onclick="toggleSection('customWrap','toggleCustomBtn')">▶ 展开</button>
-    </div>
-    <div id="customWrap" class="collapse-wrap collapsed">
+    <div class="sec-title">自定义一餐菜单 <small>输入食材名称，系统推荐这一餐该吃多少克</small></div>
+    <div id="customWrap">
     <div class="custom-input">
       <div class="field">
         <label>选择餐次 <span style="color:var(--hint)">（决定该餐目标量）</span></label>
@@ -268,12 +338,33 @@
     </div>
   </div>
 
-  <!-- 3. 食物参考表 -->
+  <!-- 3. 三餐搭配推荐 -->
+  <div class="card">
+    <div class="sec-title">三餐搭配推荐 <small>随目标动态调整份量</small>
+      <button id="refreshBtn" onclick="refreshMeals()" style="font-size:13px;padding:6px 16px;">🔄 刷新推荐</button>
+      <button id="toggleMealsBtn" class="fold-btn" onclick="toggleSection('mealsWrap','toggleMealsBtn')">▶ 展开</button>
+    </div>
+    <div id="mealsWrap" class="collapse-wrap collapsed">
+    <div class="meals" id="meals"></div>
+    <div class="day-sum" id="daySum"></div>
+    <div class="salt-tip">🧂 每日盐摄入建议控制在 <b>6–8 克</b>（约一啤酒瓶盖量），减脂期更应少盐，有助于控制血压与水肿。</div>
+    <div class="basis">
+      <b>搭配依据：</b>① <b>能量分配</b>——早 30% / 午 40% / 晚 30%，符合中国居民膳食指南「三餐合理分配」建议；
+      ② <b>精确对齐</b>——每餐用联立方程求解食材克数，使该餐宏量精确等于「全天目标 × 餐次比例」，三餐合计严格 = 计算器目标，不超标；
+      ③ <b>蛋白质均分</b>——每餐 30–45g 优质蛋白，可最大化肌肉蛋白质合成（肌少症研究建议每餐≥25–30g）；
+      ④ <b>主食粗细搭配</b>——全麦/薯类占主食 1/3，提供膳食纤维与更低升糖指数；
+      ⑤ <b>每餐有蔬菜</b>——保证膳食纤维、维生素 C 与植物化学物摄入；
+      ⑤ <b>脂肪来源分散</b>——坚果/深海鱼/蛋类提供优质脂肪与微量元素，避免单餐脂肪过高影响消化。
+    </div>
+    </div>
+  </div>
+
+  <!-- 4. 食物参考表（默认隐藏） -->
   <div class="card">
     <div class="sec-title">食物营养成分参考表 <small>每 100g 可食部分</small>
-      <button id="toggleFoodBtn" onclick="toggleFoodTable()" style="margin-left:auto;font-size:13px;padding:6px 16px;">▼ 展开/隐藏</button>
+      <button id="toggleFoodBtn" onclick="toggleFoodTable()" style="margin-left:auto;font-size:13px;padding:6px 16px;">▶ 展开</button>
     </div>
-    <div id="foodTableWrap">
+    <div id="foodTableWrap" class="collapsed">
     <div class="filters" id="filters">
       <button class="fbtn active" data-cat="all">全部</button>
       <button class="fbtn" data-cat="主食">主食</button>
@@ -366,22 +457,22 @@ const foods = [
 const byName = {}; foods.forEach(f=>byName[f.n]=f);
 
 /* ---------- 运动量档位（系数：g/kg体重） ----------
-   男性 / 女性 各一套系数，desc 为运动量说明（两性别共用同一档位描述）。 */
+   男性 / 女性 各一套系数。desc 含 TDEE 活动系数（两性别共用同一档位描述）。
+   tdee = 每日能量消耗系数（用于 TDEE = BMR × tdee）。 */
 const ACT_KEYS = ["a1","a2","a3","a4"];
-const ACT_DESC = ["周2-3h · 2次力量","周4-5h · 3次力量","周6-7h · 4次力量","周8-9h · 5次力量"];
 const ACT_NAMES = ["轻度","中度","高度","极高"];
 const activities = {
   male: [
-    {key:"a1", name:"轻度", desc:"周2-3h · 2次力量", carb:2.2, prot:1.4, fat:0.8},
-    {key:"a2", name:"中度", desc:"周4-5h · 3次力量", carb:2.5, prot:1.6, fat:0.9},
-    {key:"a3", name:"高度", desc:"周6-7h · 4次力量", carb:3,   prot:1.7, fat:1},
-    {key:"a4", name:"极高", desc:"周8-9h · 5次力量", carb:3.5, prot:1.8, fat:1}
+    {key:"a1", name:"轻度", desc:"久坐办公 · ×1.2", tdee:1.2,   carb:2.2, prot:1.4, fat:0.8},
+    {key:"a2", name:"中度", desc:"周3-4次 · ×1.375", tdee:1.375, carb:2.5, prot:1.6, fat:0.9},
+    {key:"a3", name:"高度", desc:"周4-5次力量+有氧 · ×1.55", tdee:1.55, carb:3,   prot:1.7, fat:1},
+    {key:"a4", name:"极高", desc:"周6-7次力量+有氧 · ×1.725", tdee:1.725, carb:3.5, prot:1.8, fat:1}
   ],
   female: [
-    {key:"a1", name:"轻度", desc:"周2-3h · 2次力量", carb:2.0, prot:1.4, fat:1},
-    {key:"a2", name:"中度", desc:"周4-5h · 3次力量", carb:2.3, prot:1.6, fat:1.1},
-    {key:"a3", name:"高度", desc:"周6-7h · 4次力量", carb:2.8, prot:1.7, fat:1.2},
-    {key:"a4", name:"极高", desc:"周8-9h · 5次力量", carb:3.3, prot:1.8, fat:1.2}
+    {key:"a1", name:"轻度", desc:"久坐办公 · ×1.2", tdee:1.2,   carb:2.0, prot:1.4, fat:1},
+    {key:"a2", name:"中度", desc:"周3-4次 · ×1.375", tdee:1.375, carb:2.3, prot:1.6, fat:1.1},
+    {key:"a3", name:"高度", desc:"周4-5次力量+有氧 · ×1.55", tdee:1.55, carb:2.8, prot:1.7, fat:1.2},
+    {key:"a4", name:"极高", desc:"周6-7次力量+有氧 · ×1.725", tdee:1.725, carb:3.3, prot:1.8, fat:1.2}
   ]
 };
 let curSex = "male";          // 当前性别
@@ -394,14 +485,16 @@ function renderActivity(){
     const el=document.createElement('div');
     el.className='act-card'+(a.key===curCoef.key?' active':'');
     el.dataset.key=a.key;
-    el.innerHTML=`<div class="an">${ACT_NAMES[idx]}</div><div class="ad">${ACT_DESC[idx]}</div>`+
+    el.innerHTML=`<div class="an">${a.name}</div><div class="ad">${a.desc}</div>`+
       `<div class="ac">碳${a.carb} · 蛋${a.prot} · 脂${a.fat}</div>`;
-    el.addEventListener('click',()=>{ curCoef=a; renderActivity(); recalc(); });
+    el.addEventListener('click',()=>{ curCoef=a; renderActivity(); recalc(); saveCurrentState(); });
     row.appendChild(el);
   });
 }
 
-/* 性别切换：切换系数表并回到该性别的「高度」默认档 */
+/* 性别切换：切换系数表并回到该性别的「高度」默认档。
+   性别已归入用户档案，属于表单字段：运行中的切换只影响计算预览，
+   落档统一在 saveProfile（保存档案）时完成，避免「新增用户」时污染当前已登录档案。 */
 function setSex(sex){
   curSex = sex;
   curCoef = activities[sex][2]; // 默认高度档
@@ -412,6 +505,182 @@ function setSex(sex){
 document.querySelectorAll('#sexRow .sexbtn').forEach(b=>{
   b.addEventListener('click',()=>setSex(b.dataset.sex));
 });
+
+/* ---------- 用户档案（顶部登录态：未登录=表单，已登录=头像+弹出菜单） ---------- */
+const PROF_KEY='mealProfiles_v1', PROF_CUR='mealProfileCur_v1';
+function loadProfiles(){
+  try{ return JSON.parse(localStorage.getItem(PROF_KEY)||'{}'); }catch(e){ return {}; }
+}
+function saveProfiles(p){ try{ localStorage.setItem(PROF_KEY,JSON.stringify(p)); }catch(e){} }
+function curProfileKey(){ return localStorage.getItem(PROF_CUR)||''; }
+function esc(s){ return String(s).replace(/</g,'&lt;').replace(/'/g,"\\'"); }
+
+function profSex(it){ return (it && (it.sex || (it.state && it.state.sex))) || 'male'; }
+function profSexLabel(it){ return profSex(it)==='female'?'女':'男'; }
+function renderProfiles(){
+  const form=document.getElementById('userForm'), logged=document.getElementById('userLogged');
+  if(!form||!logged) return;
+  const p=loadProfiles(); const cur=curProfileKey();
+  const it=p[cur];
+  if(it){
+    // 已登录：头像 + 菜单
+    form.style.display='none'; logged.style.display='';
+    const face=document.getElementById('avFace'), nm=document.getElementById('avName'), meta=document.getElementById('avMeta');
+    if(face) face.textContent=(it.name||'?').charAt(0);
+    if(nm) nm.textContent=it.name;
+    if(meta) meta.textContent=profSexLabel(it)+' · '+it.height+'cm · '+it.age+'岁';
+    renderUserMenu();
+  }else{
+    // 未登录：表单
+    form.style.display=''; logged.style.display='none';
+  }
+}
+function renderUserMenu(){
+  const list=document.getElementById('umList'); if(!list) return;
+  const p=loadProfiles(); const cur=curProfileKey();
+  const keys=Object.keys(p);
+  list.innerHTML=keys.map(k=>{
+    const u=p[k];
+    return `<div class="um-item${k===cur?' active':''}" onclick="applyProfile('${esc(k)}')">`+
+      `<span>${u.name.replace(/</g,'&lt;')} <span class="ui-meta">${profSexLabel(u)} · ${u.height}cm · ${u.age}岁</span></span>`+
+      (k===cur?'<span class="ui-cur">当前</span>':'')+
+      `</div>`;
+  }).join('')||'<div class="ui-meta" style="padding:8px 10px;">暂无其他用户</div>';
+}
+function toggleUserMenu(){
+  const m=document.getElementById('userMenu'); if(!m) return;
+  const open=(m.style.display==='block');
+  m.style.display=open?'none':'block';
+}
+function showUserForm(){
+  const m=document.getElementById('userMenu'); if(m) m.style.display='none';
+  // 清空表单待新增
+  const nm=document.getElementById('pName'); if(nm){ nm.value=''; nm.focus(); }
+  const p=loadProfiles();
+  if(!curProfileKey()||!p[curProfileKey()]){ renderProfiles(); return; }
+  // 已有登录用户时，切到表单态但不改当前指针：临时显示表单
+  document.getElementById('userForm').style.display='';
+  document.getElementById('userLogged').style.display='none';
+}
+/* 每用户状态：体重/性别/运动档/自定义菜单历史，随用户切换 */
+function collectUserState(){
+  const wEl=document.getElementById('weight');
+  return {
+    weight:(wEl&&wEl.value)||'70',
+    sex:curSex,
+    coefKey:(curCoef&&curCoef.key)||'a3',
+    hist:(typeof loadHist==='function')?loadHist():{bf:[],ln:[],dn:[]}
+  };
+}
+function applyUserState(st){
+  if(!st) return;
+  const wEl=document.getElementById('weight'); if(wEl&&st.weight!=null) wEl.value=st.weight;
+  if(st.sex){ curSex=st.sex; document.querySelectorAll('#sexRow .sexbtn').forEach(b=>b.classList.toggle('active',b.dataset.sex===st.sex)); }
+  if(st.coefKey){ const list=activities[curSex]||[]; const f=list.find(a=>a.key===st.coefKey); if(f) curCoef=f; }
+  if(st.hist && typeof saveHist==='function'){ saveHist(st.hist); }
+  if(typeof renderActivity==='function') renderActivity();
+  if(typeof renderCustomHist==='function') renderCustomHist();
+}
+function saveCurrentState(){
+  const cur=curProfileKey(); if(!cur) return;
+  const p=loadProfiles(); if(!p[cur]) return;
+  // 只存运行态(体重/档位/历史/性别快照)；档案固定字段 sex 只在 saveProfile 落档，
+  // 避免「新增用户」表单态下误把当前预览性别写回旧用户档案
+  p[cur].state=collectUserState(); saveProfiles(p);
+}
+function saveProfile(){
+  const name=(document.getElementById('pName').value||'').trim();
+  const h=parseFloat(document.getElementById('pHeight').value)||0;
+  const age=parseInt(document.getElementById('pAge').value)||0;
+  if(!name){ alert('请填写名字'); return; }
+  if(h<100||h>250){ alert('请填写合理身高(cm)'); return; }
+  if(age<10||age>100){ alert('请填写合理年龄'); return; }
+  const p=loadProfiles();
+  // 性别是档案固定字段：唯一落档点，取表单当前选中的性别
+  p[name]={name,sex:curSex,height:h,age,state:(p[name]&&p[name].state)||collectUserState()}; saveProfiles(p);
+  localStorage.setItem(PROF_CUR,name);
+  renderProfiles(); recalc();
+}
+function applyProfile(key){
+  const p=loadProfiles(); const it=p[key]; if(!it) return;
+  // 先把当前用户的运行态存回去（避免覆盖）
+  const prev=curProfileKey();
+  if(prev&&p[prev]&&prev!==key){ p[prev].state=collectUserState(); saveProfiles(p); }
+  document.getElementById('pName').value=it.name;
+  document.getElementById('pHeight').value=it.height;
+  document.getElementById('pAge').value=it.age;
+  // 档案性别为权威（兼容旧档案：回退 state.sex），先注入再恢复，保证系数表按新性别重算
+  const st=Object.assign({}, it.state||{});
+  st.sex=profSex(it);
+  applyUserState(st);
+  localStorage.setItem(PROF_CUR,key);
+  const m=document.getElementById('userMenu'); if(m) m.style.display='none';
+  renderProfiles(); recalc();
+}
+let _delConfirmTimer=null;
+function delCurrentUser(){
+  const btn=document.querySelector('.um-btn.del');
+  // 两击确认：第一次点改为"确认删除？"，3秒内再点才真删
+  if(btn && btn.dataset.confirm!=='1'){
+    btn.dataset.confirm='1';
+    btn._origText=btn.textContent;
+    btn.textContent='⚠ 确认删除？';
+    btn.style.borderColor='#c0392b'; btn.style.color='#c0392b'; btn.style.background='#fff5f5';
+    _delConfirmTimer=setTimeout(()=>{ if(btn){ btn.dataset.confirm=''; btn.textContent=btn._origText; btn.style.cssText=''; } },3000);
+    return;
+  }
+  // 第二击：执行删除
+  if(_delConfirmTimer){ clearTimeout(_delConfirmTimer); _delConfirmTimer=null; }
+  if(btn){ btn.dataset.confirm=''; btn.textContent=btn._origText||'🗑 删除当前用户'; btn.style.cssText=''; }
+  const cur=curProfileKey();
+  const p=loadProfiles();
+  if(!cur||!p[cur]){ renderProfiles(); return; }
+  delete p[cur]; saveProfiles(p);
+  const rest=Object.keys(p);
+  if(rest.length){
+    localStorage.setItem(PROF_CUR,rest[0]);
+    applyProfile(rest[0]);
+  }else{
+    localStorage.removeItem(PROF_CUR);
+    renderProfiles(); recalc();
+  }
+}
+['pHeight','pAge'].forEach(id=>{ const e=document.getElementById(id); if(e) e.addEventListener('input',recalc); });
+// 体重变更后保存到当前用户状态
+(function(){ const w=document.getElementById('weight'); if(w){ let t=null; w.addEventListener('input',()=>{ clearTimeout(t); t=setTimeout(saveCurrentState,500); }); } })();
+// 点击菜单外部关闭
+document.addEventListener('click',e=>{
+  const z=document.getElementById('userLogged');
+  if(z && !z.contains(e.target)){ const m=document.getElementById('userMenu'); if(m) m.style.display='none'; }
+});
+
+/* ---------- TDEE 计算（BMR 分性别：男+5 / 女-161） ---------- */
+function calcBmr(w,h,age,sex){ return 10*w + 6.25*h - 5*age + (sex==='female'? -161 : 5); }
+function updateTdee(){
+  const w=parseFloat(document.getElementById('weight').value)||0;
+  const h=parseFloat(document.getElementById('pHeight').value)||0;
+  const age=parseInt(document.getElementById('pAge').value)||0;
+  const bmr=calcBmr(w,h,age,curSex);
+  const tdee=bmr*curCoef.tdee;
+  const intake=Math.round((w*curCoef.carb*4)+(w*curCoef.prot*4)+(w*curCoef.fat*9));
+  const gap=Math.round(intake-tdee);
+  const bmrEl=document.getElementById('tBmr'), tdeeEl=document.getElementById('tTdee');
+  const gapEl=document.getElementById('tGap'), gapLbl=document.getElementById('tGapLbl'), note=document.getElementById('tdeeNote');
+  if(bmrEl) bmrEl.textContent=Math.round(bmr);
+  if(tdeeEl) tdeeEl.textContent=Math.round(tdee);
+  if(gapEl){ gapEl.textContent=(gap>=0?'+':'')+gap; }
+  if(gapLbl){
+    if(gap>50){ gapEl.style.color='#c0392b'; gapLbl.textContent='盈余(增重方向)'; gapLbl.style.color='#c0392b'; }
+    else if(gap<-50){ gapEl.style.color='#0F6E56'; gapLbl.textContent='缺口(减脂方向)'; gapLbl.style.color='#0F6E56'; }
+    else { gapEl.style.color='#b8860b'; gapLbl.textContent='≈持平'; gapLbl.style.color='#b8860b'; }
+  }
+  if(note){
+    const pct=Math.round(Math.abs(gap)/tdee*100);
+    if(gap<-50) note.innerHTML=`当前摄入比消耗少 <b>${Math.abs(gap)}</b> kcal（约 <b>${pct}%</b>），处于减脂缺口。`;
+    else if(gap>50) note.innerHTML=`当前摄入比消耗多 <b>${gap}</b> kcal（约 <b>${pct}%</b>），处于增重盈余。`;
+    else note.innerHTML=`当前摄入与消耗基本持平（差 <b>${Math.abs(gap)}</b> kcal）。`;
+  }
+}
 
 /* ---------- 三餐结构 ----------
    早餐：固定真实搭配（主食按碳水定量 + 鸡蛋100g + 牛奶250g + 水果），真实且营养均衡。
@@ -544,6 +813,7 @@ function recalc(){
   document.getElementById('coefCarb').textContent = curCoef.carb;
   document.getElementById('coefProt').textContent = curCoef.prot;
   document.getElementById('coefFat').textContent  = curCoef.fat;
+  updateTdee();
   renderMeals(T);
 }
 
@@ -688,6 +958,7 @@ function pushHist(meal,raw){
   const h=loadHist(); const arr=h[meal]||[];
   const idx=arr.indexOf(v); if(idx>=0) arr.splice(idx,1); // 去重置顶
   arr.unshift(v); h[meal]=arr.slice(0,HIST_MAX); saveHist(h);
+  saveCurrentState();
 }
 function renderCustomHist(){
   const box=document.getElementById('customHist'); if(!box) return;
@@ -705,11 +976,11 @@ function fillCustom(v){ const inp=document.getElementById('customFoods'); if(inp
 function delHistItem(meal,idx){
   const h=loadHist(); const arr=h[meal]||[];
   if(idx<0||idx>=arr.length) return;
-  arr.splice(idx,1); h[meal]=arr; saveHist(h);
+  arr.splice(idx,1); h[meal]=arr; saveHist(h); saveCurrentState();
   if(meal===curCustomMeal) renderCustomHist();
 }
 function clearCustomHist(){
-  const h=loadHist(); h[curCustomMeal]=[]; saveHist(h); renderCustomHist();
+  const h=loadHist(); h[curCustomMeal]=[]; saveHist(h); saveCurrentState(); renderCustomHist();
 }
 
 /* 模糊匹配食材名：先去空格，包含关系即命中 */
@@ -828,14 +1099,18 @@ function computeCustomMatched(matched, tgt){
   //   固定高密度食材可长到类别上限；固定低密度/超上限食材锁定在实值；free 食材可长到类别上限。
   //   用于判断：即使把该角色所有食材都拉到上限，仍够不到目标的 90% → 必须补一个侧食。
   const roleNeedsSide={carb:false,prot:false,fat:false};
+  // 用户已有某角色的食材 → 不再补新食材（允许用户食材超出份量上限来补足）
+  const userHasRole={carb:false,prot:false,fat:false};
+  userItems.forEach(it=>{ userHasRole[mainRole(it.f)]=true; });
   ['carb','prot','fat'].forEach(mk=>{
+    if(userHasRole[mk]){ roleNeedsSide[mk]=false; return; }  // 用户已有该角色 → 不补新
     let mx=0; userItems.forEach(it=>{
       if(mainRole(it.f)!==mk) return; const pf=portionOf(it.f);
       const dense=it.f[macroKey[mk]]>=DENSITY_MIN[mk];
-      let g; if(it.free) g=isVeg(it.f)?perFreeVegCap:pf.max;   // free 可长到上限(蔬菜受封顶约束)
-        else if(it.grams>=pf.max) g=pf.max;        // 已达/超上限 → 锁定上限
-        else if(dense) g=pf.max;                    // 高密度未达上限 → 可长到上限
-        else g=Math.min(it.grams,pf.max);           // 低密度 → 锁定实值
+      let g; if(it.free) g=isVeg(it.f)?perFreeVegCap:pf.max;
+        else if(it.grams>=pf.max) g=pf.max;
+        else if(dense) g=pf.max;
+        else g=Math.min(it.grams,pf.max);
       mx+=it.f[macroKey[mk]]*g/100; });
     roleNeedsSide[mk]= mx < tgt[mk]*0.9;
   });
@@ -885,12 +1160,19 @@ function computeCustomMatched(matched, tgt){
       if(roleNeedsSide[mr]){ const fl=Math.min(vCap,Math.max(40,Math.round(pf2.ideal*0.3)));
         g=Math.min(vCap, Math.max(fl,gIdeal)); }          // 供给不足：保持有意义份量下限(用户食材不被削到无意义)
       else g=Math.max(8, gIdeal);                            // 已充分覆盖：允许缩小以精确配平(避免多食材同类超标)
-      base=g; ub=g; lb=g; }  // 锁定份量(放大不超类别上限/蔬菜封顶)
+      // free 食材：base=推荐量，允许 solver 在 [下限, 上限] 范围内微调配平
+      const fl2=Math.max(8, Math.round(g*0.3));
+      // 用户已有该角色且不是超标主力 → 允许超出类别上限来补足（不推荐新食材）
+      const freeUb=(userHasRole[mr] && !overMK.has(mr) && !isVeg(it.f)) ? NLP : vCap;
+      base=g; ub=freeUb; lb=fl2; }
     else if(it.grams>=pf.max){
-      if(overMK.has(mr)){ base=pf.max; ub=pf.max; lb=Math.max(10,Math.round(it.grams*0.3)); }
+      // 用户已有该角色 → 允许超出上限来补足缺口（不推荐新食材）
+      if(userHasRole[mr] && overMK.has(mr)){ base=pf.max; ub=pf.max; lb=Math.max(10,Math.round(it.grams*0.3)); }
+      else if(userHasRole[mr]){ base=pf.max; ub=NLP; lb=Math.max(10,Math.round(it.grams*0.3)); } // 可超上限补足
+      else if(overMK.has(mr)){ base=pf.max; ub=pf.max; lb=Math.max(10,Math.round(it.grams*0.3)); }
       else { base=pf.max; ub=pf.max; lb=pf.max; }
     }
-    else if(it.f[macroKey[mr]]>=DENSITY_MIN[mr]){ base=it.grams; ub=pf.max; lb=Math.max(10,Math.round(it.grams*0.3)); }
+    else if(it.f[macroKey[mr]]>=DENSITY_MIN[mr]){ base=it.grams; ub=userHasRole[mr]?NLP:pf.max; lb=Math.max(10,Math.round(it.grams*0.3)); }
     else { base=it.grams; ub=it.grams; lb=it.grams; }
     vars.push({kind:'user',i,f:it.f,base,ub,lb,_locked:!!it.free});
   });
@@ -1149,6 +1431,7 @@ document.querySelectorAll('.fbtn').forEach(b=>{
   });
 });
 renderTable('all');
+renderProfiles();
 renderActivity();
 buildPicks();
 recalc();

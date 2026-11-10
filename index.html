@@ -1056,6 +1056,14 @@ function computeCustomMatched(matched, tgt){
   const overMK=new Set();
   mkL.forEach(mk=>{ if(sumFixed[mk]>tgt[mk]*1.2)overMK.add(mk); });
   const DENSITY_MIN={carb:20,prot:18,fat:20};
+  // ===== 碳水主力护栏（关键）=====
+  // mainRole 只按「每100g哪个宏量数值最大」归类，蓝莓(碳水14)、酸奶(碳水4.9)会被判成 carb，
+  // 但它们真实类别是水果/奶豆，属搭配类食物，绝不能被当作主食放大到几百克，
+  // 也不能据此判定「用户已有主食」而拒绝补真正的碳水来源。
+  // 只有主食类或碳水密度≥DENSITY_MIN.carb 的食物才算碳水主力。
+  const isCarbMain = f => mainRole(f)==='carb' && (f.c==='主食' || f.carb>=DENSITY_MIN.carb);
+  // 该食材能否作为主力被放大（蛋白/脂肪角色沿用 mainRole；碳水角色必须过 isCarbMain）
+  const canScaleUp = (f,mr) => mr!=='carb' || isCarbMain(f);
   // ===== 蔬菜合计封顶（健身人群常识）=====
   // 健身人群每日蔬菜 400-600g，单餐约 130-250g。多种蔬菜累积的蛋白/碳水会"抵扣"肉类份量，
   // 导致"菜比肉多"。故对蔬菜合计设上限：free(推荐量)蔬菜均摊剩余额度，超出不再加量，
@@ -1090,10 +1098,12 @@ function computeCustomMatched(matched, tgt){
   // 用户主力食材在「理想量」下对其主角色 mk 的宏量贡献(用于 roleScale 分母)
   const roleIdealTotal={carb:0,prot:0,fat:0};
   userItems.forEach(it=>{ if(it.free){ const mr=mainRole(it.f);
+    if(!canScaleUp(it.f,mr)) return;   // 搭配类不参与主力缩放，避免稀释真主食的份额
     roleIdealTotal[mr]+=it.f[macroKey[mr]]*portionOf(it.f).ideal/100; } });
   // 每角色 free 食材的理想量与上限量(用于决定该角色能否放大到上限)
   const roleIdealG={carb:0,prot:0,fat:0}, roleMaxG={carb:0,prot:0,fat:0};
   userItems.forEach(it=>{ if(it.free){ const pf=portionOf(it.f); const mr=mainRole(it.f);
+    if(!canScaleUp(it.f,mr)) return;
     roleIdealG[mr]+=pf.ideal; roleMaxG[mr]+=pf.max; } });
   // 某角色「可达到的最大宏量贡献」= 该角色所有用户食材在各自允许上限下的贡献之和。
   //   固定高密度食材可长到类别上限；固定低密度/超上限食材锁定在实值；free 食材可长到类别上限。
@@ -1101,7 +1111,9 @@ function computeCustomMatched(matched, tgt){
   const roleNeedsSide={carb:false,prot:false,fat:false};
   // 用户已有某角色的食材 → 不再补新食材（允许用户食材超出份量上限来补足）
   const userHasRole={carb:false,prot:false,fat:false};
-  userItems.forEach(it=>{ userHasRole[mainRole(it.f)]=true; });
+  userItems.forEach(it=>{ const mr=mainRole(it.f);
+    if(!canScaleUp(it.f,mr)) return;   // 水果/奶豆的低密度碳水不算「用户已有主食」
+    userHasRole[mr]=true; });
   ['carb','prot','fat'].forEach(mk=>{
     if(userHasRole[mk]){ roleNeedsSide[mk]=false; return; }  // 用户已有该角色 → 不补新
     let mx=0; userItems.forEach(it=>{
@@ -1155,24 +1167,33 @@ function computeCustomMatched(matched, tgt){
     let base,ub,lb;
     if(it.free){ const pf2=portionOf(it.f);
       const vCap=isVeg(it.f)?perFreeVegCap:pf2.max;   // free 蔬菜受合计封顶约束
-      const gIdeal=Math.min(vCap, Math.round(pf2.ideal*roleScale[mr]));
-      let g;
-      if(roleNeedsSide[mr]){ const fl=Math.min(vCap,Math.max(40,Math.round(pf2.ideal*0.3)));
-        g=Math.min(vCap, Math.max(fl,gIdeal)); }          // 供给不足：保持有意义份量下限(用户食材不被削到无意义)
-      else g=Math.max(8, gIdeal);                            // 已充分覆盖：允许缩小以精确配平(避免多食材同类超标)
-      // free 食材：base=推荐量，允许 solver 在 [下限, 上限] 范围内微调配平
-      const fl2=Math.max(8, Math.round(g*0.3));
-      // 用户已有该角色且不是超标主力 → 允许超出类别上限来补足（不推荐新食材）
-      const freeUb=(userHasRole[mr] && !overMK.has(mr) && !isVeg(it.f)) ? NLP : vCap;
-      base=g; ub=freeUb; lb=fl2; }
+      const isMain=canScaleUp(it.f,mr);
+      if(!isMain){
+        // 搭配类(水果/奶豆/蔬菜)：按单餐建议量的半份固定为点缀，不参与宏量配平。
+        // 绝不允许被 solver 顶到类别上限去充当主食；碳水缺口全部由真主食(燕麦/米饭)承担，
+        // 蛋白/脂肪缺口由肉蛋/坚果承担。蔬菜仍受 VEG_CAP 合计封顶约束。
+        const g=Math.max(40, Math.min(vCap, Math.round(pf2.ideal*0.5)));
+        base=g; ub=g; lb=g;   // 完全锁定：保证用户挑选的搭配类食材被保留，且不被优化器削到0
+      } else {
+        const gIdeal=Math.min(vCap, Math.round(pf2.ideal*roleScale[mr]));
+        let g;
+        if(roleNeedsSide[mr]){ const fl=Math.min(vCap,Math.max(40,Math.round(pf2.ideal*0.3)));
+          g=Math.min(vCap, Math.max(fl,gIdeal)); }          // 供给不足：保持有意义份量下限(用户食材不被削到无意义)
+        else g=Math.max(8, gIdeal);                            // 已充分覆盖：允许缩小以精确配平(避免多食材同类超标)
+        const fl2=Math.max(8, Math.round(g*0.3));
+        // 仅「真正的宏量主力」才允许超出类别上限来补足（水果/奶豆/蔬菜一律锁在类别上限内）
+        const freeUb=(userHasRole[mr] && !overMK.has(mr) && !isVeg(it.f)) ? NLP : vCap;
+        base=g; ub=freeUb; lb=fl2;
+      }
+    }
     else if(it.grams>=pf.max){
-      // 用户已有该角色 → 允许超出上限来补足缺口（不推荐新食材）
+      // 用户已有该角色 → 允许超出上限来补足缺口（不推荐新食材）；搭配类锁在类别上限
       if(userHasRole[mr] && overMK.has(mr)){ base=pf.max; ub=pf.max; lb=Math.max(10,Math.round(it.grams*0.3)); }
-      else if(userHasRole[mr]){ base=pf.max; ub=NLP; lb=Math.max(10,Math.round(it.grams*0.3)); } // 可超上限补足
+      else if(userHasRole[mr]){ base=pf.max; ub=canScaleUp(it.f,mr)?NLP:pf.max; lb=Math.max(10,Math.round(it.grams*0.3)); }
       else if(overMK.has(mr)){ base=pf.max; ub=pf.max; lb=Math.max(10,Math.round(it.grams*0.3)); }
       else { base=pf.max; ub=pf.max; lb=pf.max; }
     }
-    else if(it.f[macroKey[mr]]>=DENSITY_MIN[mr]){ base=it.grams; ub=userHasRole[mr]?NLP:pf.max; lb=Math.max(10,Math.round(it.grams*0.3)); }
+    else if(it.f[macroKey[mr]]>=DENSITY_MIN[mr]){ base=it.grams; ub=(canScaleUp(it.f,mr)&&userHasRole[mr])?NLP:pf.max; lb=Math.max(10,Math.round(it.grams*0.3)); }
     else { base=it.grams; ub=it.grams; lb=it.grams; }
     vars.push({kind:'user',i,f:it.f,base,ub,lb,_locked:!!it.free});
   });
@@ -1327,7 +1348,7 @@ function calcCustom(){
   html += `<div class="custom-legend"><span class="lg"><span class="sw user"></span>你选的食材</span>`+
     `<span class="lg"><span class="sw add"></span>建议补充的食材</span></div>`;
   plan.forEach(p=>{
-    const roleTag={carb:'主食',prot:'蛋白',fat:'脂肪'}[p.role];
+    const roleTag=p.f.c;   // 显示真实食物类别，不拿宏量角色冒充类别
     const addCls=p.add?' add':'';
     const badge=p.add?'<span class="badge-add">建议添加</span>':'';
     // 重量显示：未填重量→建议量；减量优先，其次加量

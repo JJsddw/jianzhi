@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- 版本号：每次部署必须 +1（与文末 APP_VER 常量保持一致），供旧页面检测更新用 -->
+<meta name="app-ver" content="20261111-1029">
 <title>谭成义减脂规划期</title>
 <!-- ===== PWA / iOS 主屏幕安装 ===== -->
 <meta name="theme-color" content="#87CEEB">
@@ -65,6 +67,11 @@
   .pfield input:focus{border-color:var(--carb);}
   #pName{width:130px;}
   .psave{padding:9px 16px;font-size:13px;}
+  /* 新增用户表单态的「取消」：次要按钮（白底+蓝灰实描边），与实心主按钮「保存档案」区分 */
+  .pcancel{padding:9px 16px;font-size:13px;background:#fff;color:var(--muted);
+    border:1.5px solid var(--io-line);border-radius:10px;font-weight:600;cursor:pointer;}
+  .pcancel:hover{border-color:var(--carb);color:var(--carb);background:#f2f9ff;}
+  @media(max-width:720px){.pcancel{width:100%;}}
   /* 档案表单内的性别按钮：比计算器区更紧凑 */
   .profile-inputs .sex-sel{gap:6px;}
   .profile-inputs .sexbtn{padding:7px 14px;font-size:13px;}
@@ -225,9 +232,87 @@
   .suggest b{color:#a8510f;}
   .suggest ul{margin:6px 0 0;padding-left:20px;}
   .suggest li{margin:3px 0;}
+  /* ===== 版本更新提示：底部悬浮卡片，不遮挡内容 ===== */
+  .upd-bar{position:fixed;z-index:9999;bottom:max(16px,env(safe-area-inset-bottom));left:50%;
+    transform:translateX(-50%);width:min(420px,calc(100% - 32px));
+    background:var(--card);border:1px solid var(--line2);border-radius:14px;
+    box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;line-height:1.45;}
+  .upd-bar[hidden]{display:none!important;}
+  .upd-dot{width:8px;height:8px;border-radius:50%;background:var(--carb);flex:0 0 auto;
+    box-shadow:0 0 0 4px rgba(55,138,221,.15);}
+  .upd-txt{flex:1;min-width:150px;color:var(--ink);}
+  .upd-txt b{font-weight:600;}
+  .upd-txt small{display:block;color:var(--muted);font-size:12px;}
+  .upd-bar button{border:0;border-radius:9px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;}
+  .upd-go{background:var(--carb);color:#fff;font-weight:600;}
+  .upd-later{background:var(--bg);color:var(--muted);border:1px solid var(--line);}
+
+  /* ============================================================
+     UI 语义区分层 v1（2026-11-10）：可交互 vs 只读
+     起因：可点选控件(act-card/sexbtn/msbtn/fbtn/输入框) 与只读读数卡
+           (tcard/tdee-card) 都是「白/浅灰底 + 1px 边框 + 圆角」，
+           用户分不清哪里能操作、哪里只是看结果。
+     两套视觉语言（纯 CSS 追加，不改任何 id / 结构 / JS）：
+       可交互 = 纯白底 + 明确实描边 + hover 浮起（凸起、可按压）
+       只读   = 中性填充块 + 无可见描边（扁平、沉下去）
+       卡片   = 交互主导(io-card:纯白+蓝竖条) / 只读主导(ro-card:淡蓝灰+灰竖条)
+     ============================================================ */
+  :root{
+    --io-line:#c4d2e2;      /* 可交互控件：明确的蓝灰实描边 */
+    --info-fill:#EAF0F6;    /* 只读读数卡：中性冷灰填充 */
+    --ro-bg:#F6F9FC;        /* 只读主导卡片底色 */
+  }
+  /* 1) 卡片层：这块要不要动手，一眼分辨（inset 竖条不改盒模型尺寸） */
+  .card.io-card{box-shadow:inset 3px 0 0 var(--carb);}
+  .card.ro-card{background:var(--ro-bg);box-shadow:inset 3px 0 0 #b9c9da;}
+  .card.ro-card .scroll{background:#fff;}
+  .user-form{box-shadow:inset 3px 0 0 var(--carb);}   /* 顶部档案表单同属交互区 */
+  /* 2) 可交互·输入类：纯白底 + 实描边 + 聚焦光环 */
+  input[type=number],input[type=text],#customFoods,
+  .pfield input,.food-row .fr-name,.food-row .fr-grams{
+    background:#fff;border:1.5px solid var(--io-line);
+    transition:border-color .15s,box-shadow .15s;
+  }
+  input[type=number]:focus,input[type=text]:focus,#customFoods:focus,
+  .pfield input:focus,.food-row .fr-name:focus,.food-row .fr-grams:focus{
+    border-color:var(--carb);box-shadow:0 0 0 3px rgba(55,138,221,.14);
+  }
+  /* 3) 可交互·点选类：纯白底 + 实描边 + hover 浮起（选中态保留原浅蓝高亮） */
+  .act-card,.sexbtn,.msbtn,.fbtn{
+    background:#fff;border:1.5px solid var(--io-line);
+    transition:border-color .15s,box-shadow .15s,transform .15s,background .15s;
+  }
+  .act-card:hover,.sexbtn:hover,.msbtn:hover,.fbtn:hover{
+    border-color:var(--carb);box-shadow:0 3px 10px rgba(55,138,221,.14);
+    transform:translateY(-1px);
+  }
+  .act-card.active,.sexbtn.active,.msbtn.active,.fbtn.active{
+    border-color:var(--carb);box-shadow:inset 0 0 0 1px var(--carb);
+  }
+  /* 3b) 标题栏辅助按钮(刷新/折叠/展开)：裸 button 默认灰底 → 统一白底实描边 */
+  #refreshBtn,#toggleMealsBtn,#toggleFoodBtn{
+    background:#fff;border:1.5px solid var(--io-line);color:var(--ink);
+    border-radius:9px;cursor:pointer;
+    transition:border-color .15s,box-shadow .15s,transform .15s;
+  }
+  #refreshBtn:hover,#toggleMealsBtn:hover,#toggleFoodBtn:hover{
+    border-color:var(--carb);color:var(--carb);
+    box-shadow:0 3px 10px rgba(55,138,221,.14);transform:translateY(-1px);
+  }
+  /* 4) 只读读数卡：中性填充块 + 无可见描边（明确不可点、不浮起） */
+  .tcard,.tdee-card{background:var(--info-fill);border:1px solid transparent;}
+  .tdee-card.hi{background:#FBE7DC;border-color:transparent;}
 </style>
 </head>
 <body>
+<!-- 版本更新提示：默认隐藏，检测到线上版本比本地新时才显示 -->
+<div id="updBar" class="upd-bar" hidden>
+  <span class="upd-dot"></span>
+  <span class="upd-txt"><b>发现新版本</b><small>点「立即更新」加载最新内容</small></span>
+  <button class="upd-go" id="updGo" type="button">立即更新</button>
+  <button class="upd-later" id="updLater" type="button">稍后</button>
+</div>
 <div class="wrap">
   <h1>谭成义减脂规划期</h1>
   <p class="sub">输入体重 → 计算每日摄入目标 → 自动生成健康三餐搭配 · 附食物营养参考表</p>
@@ -248,6 +333,7 @@
         <div class="pfield"><label>身高</label><div style="display:flex;align-items:center;gap:6px;"><input id="pHeight" type="number" value="175" min="100" max="250" step="1"><span class="unit" style="padding-bottom:10px;">cm</span></div></div>
         <div class="pfield"><label>年龄</label><div style="display:flex;align-items:center;gap:6px;"><input id="pAge" type="number" value="25" min="10" max="100" step="1"><span class="unit" style="padding-bottom:10px;">岁</span></div></div>
         <button class="btn psave" onclick="saveProfile()">保存档案</button>
+        <button class="pcancel" id="pCancel" type="button" onclick="cancelUserForm()" style="display:none;">取消</button>
       </div>
     </div>
     <!-- 已登录：头像 + 弹出菜单 -->
@@ -269,7 +355,7 @@
   </div>
 
   <!-- 1. 摄入计算器 -->
-  <div class="card">
+  <div class="card io-card">
     <div class="sec-title">每日摄入目标 <small>按体重 + 运动量动态计算</small></div>
 
     <div class="calc-row">
@@ -310,7 +396,7 @@
   </div>
 
   <!-- 2. 自定义一餐菜单（默认常显，不折叠） -->
-  <div class="card">
+  <div class="card io-card">
     <div class="sec-title">自定义一餐菜单 <small>输入食材名称，系统推荐这一餐该吃多少克</small></div>
     <div id="customWrap">
     <div class="custom-input">
@@ -339,7 +425,7 @@
   </div>
 
   <!-- 3. 三餐搭配推荐 -->
-  <div class="card">
+  <div class="card ro-card">
     <div class="sec-title">三餐搭配推荐 <small>随目标动态调整份量</small>
       <button id="refreshBtn" onclick="refreshMeals()" style="font-size:13px;padding:6px 16px;">🔄 刷新推荐</button>
       <button id="toggleMealsBtn" class="fold-btn" onclick="toggleSection('mealsWrap','toggleMealsBtn')">▶ 展开</button>
@@ -360,7 +446,7 @@
   </div>
 
   <!-- 4. 食物参考表（默认隐藏） -->
-  <div class="card">
+  <div class="card ro-card">
     <div class="sec-title">食物营养成分参考表 <small>每 100g 可食部分</small>
       <button id="toggleFoodBtn" onclick="toggleFoodTable()" style="margin-left:auto;font-size:13px;padding:6px 16px;">▶ 展开</button>
     </div>
@@ -534,6 +620,7 @@ function renderProfiles(){
     // 未登录：表单
     form.style.display=''; logged.style.display='none';
   }
+  updateCancelBtn();   // 有可退回的登录档案时才出现「取消」
 }
 function renderUserMenu(){
   const list=document.getElementById('umList'); if(!list) return;
@@ -552,15 +639,49 @@ function toggleUserMenu(){
   const open=(m.style.display==='block');
   m.style.display=open?'none':'block';
 }
+/* 「取消」仅在已存在可退回的登录档案时出现（首次创建没有退路，隐藏）。
+   canCancelProfile() 是唯一判据，renderProfiles/showUserForm 都据此刷新显隐。 */
+function canCancelProfile(){
+  const p=loadProfiles(), cur=curProfileKey();
+  return !!(cur && p[cur]);
+}
+function updateCancelBtn(){
+  const c=document.getElementById('pCancel'); if(!c) return;
+  c.style.display=canCancelProfile()?'':'none';
+}
+/* 进入「新增用户」表单态前的运行态快照，供取消时还原（性别/档位/身高/年龄/名字）。 */
+let _formSnapshot=null;
 function showUserForm(){
   const m=document.getElementById('userMenu'); if(m) m.style.display='none';
+  updateCancelBtn();
+  const canCancel=canCancelProfile();
+  if(canCancel){
+    _formSnapshot={
+      name:(document.getElementById('pName')||{}).value||'',
+      height:(document.getElementById('pHeight')||{}).value||'',
+      age:(document.getElementById('pAge')||{}).value||'',
+      sex:curSex, coefKey:(curCoef&&curCoef.key)||'a3'
+    };
+  }else{ _formSnapshot=null; }
   // 清空表单待新增
-  const nm=document.getElementById('pName'); if(nm){ nm.value=''; nm.focus(); }
-  const p=loadProfiles();
-  if(!curProfileKey()||!p[curProfileKey()]){ renderProfiles(); return; }
+  const nm=document.getElementById('pName'); if(nm){ nm.value=''; if(nm.focus) nm.focus(); }
+  if(!canCancel){ renderProfiles(); return; }
   // 已有登录用户时，切到表单态但不改当前指针：临时显示表单
   document.getElementById('userForm').style.display='';
   document.getElementById('userLogged').style.display='none';
+}
+function cancelUserForm(){
+  // 还原进入表单态前的运行态，再回到登录态（不新增、不改指针、不落档）
+  const s=_formSnapshot; _formSnapshot=null;
+  if(s){
+    const setV=(id,v)=>{ const e=document.getElementById(id); if(e) e.value=v; };
+    setV('pName',s.name); setV('pHeight',s.height); setV('pAge',s.age);
+    curSex=s.sex;
+    const list=activities[curSex]||[]; const f=list.find(a=>a.key===s.coefKey); if(f) curCoef=f;
+    document.querySelectorAll('#sexRow .sexbtn').forEach(b=>b.classList.toggle('active',b.dataset.sex===s.sex));
+    if(typeof renderActivity==='function') renderActivity();
+  }
+  renderProfiles(); recalc();
 }
 /* 每用户状态：体重/性别/运动档/自定义菜单历史，随用户切换 */
 function collectUserState(){
@@ -1457,6 +1578,56 @@ renderActivity();
 buildPicks();
 recalc();
 renderCustomHist();
+
+/* ===================== 版本更新检测（独立模块，不触碰任何既有逻辑） =====================
+   纯静态站点没有后端，只能让旧页面主动向线上查询版本号。
+   每次部署把 <meta name="app-ver"> 与下面 APP_VER 同步 +1；旧页面 fetch 自身 HTML
+   （no-store + 随机参数，绕开 iOS PWA 缓存），解析出线上版本号，与本地不一致即提示。
+   file:// 本地预览 / 离线 / 请求失败 / 无 DOM 环境（自检 mock）一律静默降级。 */
+(function(){
+  var APP_VER='20261111-1029';
+  var SKIP_KEY='mealAppSkipVer_v1';
+  var last=0, busy=false, remoteVer='';
+  try{
+    if(typeof location==='undefined' || location.protocol==='file:') return;
+    if(typeof fetch!=='function' || typeof document==='undefined' || !document.getElementById) return;
+    var bar=function(){ return document.getElementById('updBar'); };
+    var show=function(v){ remoteVer=v; var b=bar(); if(b) b.hidden=false; };
+    var hide=function(){ var b=bar(); if(b) b.hidden=true; };
+    var skip=function(){ try{ localStorage.setItem(SKIP_KEY,remoteVer); }catch(e){} hide(); };
+    var go=function(){
+      var path=(typeof location.pathname==='string'&&location.pathname)||'/';
+      try{ location.replace(path+'?v='+Date.now()); }
+      catch(e){ try{ location.reload(); }catch(e2){} }
+    };
+    var check=async function(force){
+      var now=Date.now();
+      if(busy) return;
+      if(!force && now-last<60000) return;   // 60 秒节流
+      last=now; busy=true;
+      try{
+        var path=(typeof location.pathname==='string'&&location.pathname)||'/';
+        var r=await fetch(path+'?_chk='+now,{cache:'no-store',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}});
+        if(!r.ok) return;
+        var t=await r.text();
+        var m=t.match(/<meta\s+name=["']app-ver["']\s+content=["']([^"']+)["']/i);
+        if(!m||!m[1]||m[1]===APP_VER) return;
+        var sk=null; try{ sk=localStorage.getItem(SKIP_KEY); }catch(e){}
+        if(sk===m[1]) return;                // 该版本已被用户忽略
+        show(m[1]);
+      }catch(e){ /* 离线或失败：静默，不影响主功能 */ }
+      finally{ busy=false; }
+    };
+    var g=document.getElementById('updGo'), l=document.getElementById('updLater');
+    if(g&&g.addEventListener) g.addEventListener('click',go);
+    if(l&&l.addEventListener) l.addEventListener('click',skip);
+    if(typeof setTimeout==='function') setTimeout(function(){ check(true); },3000);
+    if(document.addEventListener) document.addEventListener('visibilitychange',function(){
+      if(!document.hidden) check(false);
+    });
+    if(typeof setInterval==='function') setInterval(function(){ check(false); },1800000);
+  }catch(e){ /* 环境不支持时静默 */ }
+})();
 </script>
 </body>
 </html>

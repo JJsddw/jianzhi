@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- 版本号：每次部署必须 +1（与文末 APP_VER 常量保持一致），供旧页面检测更新用 -->
-<meta name="app-ver" content="20261111-1029">
+<meta name="app-ver" content="20261111-1124">
 <title>谭成义减脂规划期</title>
 <!-- ===== PWA / iOS 主屏幕安装 ===== -->
 <meta name="theme-color" content="#87CEEB">
@@ -232,12 +232,14 @@
   .suggest b{color:#a8510f;}
   .suggest ul{margin:6px 0 0;padding-left:20px;}
   .suggest li{margin:3px 0;}
-  /* ===== 版本更新提示：底部悬浮卡片，不遮挡内容 ===== */
-  .upd-bar{position:fixed;z-index:9999;bottom:max(16px,env(safe-area-inset-bottom));left:50%;
+  /* ===== 版本更新提示：顶部悬浮卡片（让开 iPhone 刘海/状态栏，不遮挡内容）===== */
+  .upd-bar{position:fixed;z-index:9999;top:max(16px,env(safe-area-inset-top));left:50%;
     transform:translateX(-50%);width:min(420px,calc(100% - 32px));
     background:var(--card);border:1px solid var(--line2);border-radius:14px;
     box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;
-    display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;line-height:1.45;}
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;line-height:1.45;
+    animation:updDrop .32s ease-out;}
+  @keyframes updDrop{from{opacity:0;transform:translate(-50%,-14px);}to{opacity:1;transform:translate(-50%,0);}}
   .upd-bar[hidden]{display:none!important;}
   .upd-dot{width:8px;height:8px;border-radius:50%;background:var(--carb);flex:0 0 auto;
     box-shadow:0 0 0 4px rgba(55,138,221,.15);}
@@ -1585,7 +1587,7 @@ renderCustomHist();
    （no-store + 随机参数，绕开 iOS PWA 缓存），解析出线上版本号，与本地不一致即提示。
    file:// 本地预览 / 离线 / 请求失败 / 无 DOM 环境（自检 mock）一律静默降级。 */
 (function(){
-  var APP_VER='20261111-1029';
+  var APP_VER='20261111-1124';
   var SKIP_KEY='mealAppSkipVer_v1';
   var last=0, busy=false, remoteVer='';
   try{

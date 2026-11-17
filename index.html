@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- 版本号：每次部署必须 +1（与文末 APP_VER 常量保持一致），供旧页面检测更新用 -->
-<meta name="app-ver" content="20261117-1042">
+<meta name="app-ver" content="20261117-1107">
 <title>谭成义减脂规划期</title>
 <!-- ===== PWA / iOS 主屏幕安装 ===== -->
 <meta name="theme-color" content="#87CEEB">
@@ -741,6 +741,17 @@ function saveProfile(){
   p[name]={name,sex:curSex,height:h,age,state:(p[name]&&p[name].state)||collectUserState()}; saveProfiles(p);
   localStorage.setItem(PROF_CUR,name);
   renderProfiles(); recalc();
+}
+/* 冷启动恢复：重新进入页面时，把当前登录档案的运行态（体重/性别/档位/历史）读回运行变量。
+   以往只有「切换用户」走 applyProfile 恢复 state，冷启动只 renderProfiles 渲染头像，
+   体重输入框仍是 HTML 默认值 70 → 用户误以为体重没被记住。此处补齐冷启动恢复。
+   仅当有有效登录档案时执行；未登录(首次)保持默认值，不干预。 */
+function restoreCurrentState(){
+  const cur=curProfileKey(); if(!cur) return;
+  const p=loadProfiles(); const it=p[cur]; if(!it||!it.state) return;
+  const st=Object.assign({}, it.state);
+  st.sex=profSex(it);   // 档案性别为权威（兼容旧档案回退 state.sex）
+  applyUserState(st);
 }
 function applyProfile(key){
   const p=loadProfiles(); const it=p[key]; if(!it) return;
@@ -1748,6 +1759,7 @@ document.querySelectorAll('.fbtn').forEach(b=>{
 });
 renderTable('all');
 renderProfiles();
+restoreCurrentState();   // 冷启动恢复当前档案的体重/性别/档位/历史（未登录则跳过）
 renderActivity();
 buildPicks();
 recalc();
@@ -1759,7 +1771,7 @@ renderCustomHist();
    （no-store + 随机参数，绕开 iOS PWA 缓存），解析出线上版本号，与本地不一致即提示。
    file:// 本地预览 / 离线 / 请求失败 / 无 DOM 环境（自检 mock）一律静默降级。 */
 (function(){
-  var APP_VER='20261117-1042';
+  var APP_VER='20261117-1107';
   var SKIP_KEY='mealAppSkipVer_v1';
   var last=0, busy=false, remoteVer='';
   try{

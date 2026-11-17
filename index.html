@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- 版本号：每次部署必须 +1（与文末 APP_VER 常量保持一致），供旧页面检测更新用 -->
-<meta name="app-ver" content="20261111-1124">
+<meta name="app-ver" content="20261117-1042">
 <title>谭成义减脂规划期</title>
 <!-- ===== PWA / iOS 主屏幕安装 ===== -->
 <meta name="theme-color" content="#87CEEB">
@@ -219,6 +219,24 @@
   .fg-need{color:#c0392b;font-weight:700;font-size:12px;white-space:nowrap;padding-left:6px;font-variant-numeric:tabular-nums;}
   .fg-need.ok{color:#0F6E56;font-weight:600;}
   .fg-need.free{color:#b8860b;font-weight:700;}
+  /* 推荐克数可编辑（可交互：白底 + 1.5px 描边；锁定态绿描边） */
+  .gram-box{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
+  .gram-edit{width:62px;text-align:center;font-size:14px;font-weight:600;padding:5px 4px;color:var(--ink);background:#fff;border:1.5px solid var(--io-line,#c4d2e2);border-radius:8px;font-variant-numeric:tabular-nums;transition:box-shadow .15s,transform .15s;}
+  .gram-edit:hover{transform:translateY(-1px);}
+  .gram-edit:focus{outline:none;box-shadow:0 0 0 3px rgba(55,138,221,.28);}
+  .gram-edit.locked{border-color:#0F6E56;background:#F0FBF6;color:#0F6E56;}
+  .gram-unit{font-size:12px;color:var(--muted);}
+  .fg-need.locked{color:#0F6E56;font-weight:600;font-size:11px;}
+  .gram-recover{margin-left:auto;font-size:11.5px;padding:4px 10px;color:var(--ink);background:#fff;border:1.5px solid var(--io-line,#c4d2e2);border-radius:8px;cursor:pointer;transition:box-shadow .15s,transform .15s;}
+  .gram-recover:hover{transform:translateY(-1px);box-shadow:0 0 0 3px rgba(55,138,221,.2);}
+  /* 克数改动被拦截时的提示（只读信息，红字；不改结构） */
+  #customHint.reject{color:#a12b1e;font-weight:600;background:#FDECEA;border:1px solid #F5B7B1;border-radius:8px;padding:6px 10px;display:block;margin-top:6px;}
+  /* 建议提示挪进推荐卡片内：紧贴编辑区顶部，用户当前视口可见，无需滚动。
+     2026-11-16 需求变更：从「拦截弹回红字」改为「软建议黄字」——超区间只提示不拦。 */
+  .gram-reject-tip{display:none;color:#7a5a12;font-weight:600;background:#FFF8E6;border:1px solid #F0D98A;border-radius:8px;padding:8px 11px;margin:8px 0 2px;font-size:12.5px;line-height:1.55;}
+  .gram-reject-tip.show{display:block;}
+  /* 每行输入框旁的建议区间（只读信息，淡黄底） */
+  .gram-range{font-size:11px;color:#8a6d1e;background:#FFF7E6;border:1px solid #F0DBA8;border-radius:6px;padding:2px 6px;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:600;}
   .food-item .fn.free{color:#8a5a1e;font-weight:600;}
   .food-item .fmacro{display:block;font-size:10.5px;color:var(--hint);margin-top:2px;font-variant-numeric:tabular-nums;font-weight:400;}
   .custom-legend{font-size:12px;color:var(--muted);margin:10px 0 2px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;}
@@ -1158,7 +1176,7 @@ function computeCustomMatched(matched, tgt){
   const macroKey={carb:'carb',prot:'p',fat:'f'};
   const macroLabel={carb:'碳水',prot:'蛋白',fat:'脂肪'};
   // 用户现有食材（保持输入顺序）；free=未填重量(待推荐)，grams=0
-  const userItems = matched.map(m=>({name:m.name, f:m.f, grams:m.grams, free:!!m.free}));
+  const userItems = matched.map(m=>({name:m.name, f:m.f, grams:m.grams, free:!!m.free, locked:!!m.locked}));
   const targetKcal=tgt.carb*4+tgt.prot*4+tgt.fat*9;
   const NLP=400;                                   // 新食材克数上限
   const usedNames=userItems.map(it=>it.name);
@@ -1236,13 +1254,15 @@ function computeCustomMatched(matched, tgt){
   const userHasRole={carb:false,prot:false,fat:false};
   userItems.forEach(it=>{ const mr=mainRole(it.f);
     if(!canScaleUp(it.f,mr)) return;   // 水果/奶豆的低密度碳水不算「用户已有主食」
+    if(it.locked) return;              // 锁死项不能自己长大达标：仍视为「该角色供给不足」，允许补侧食把缺口补回
     userHasRole[mr]=true; });
   ['carb','prot','fat'].forEach(mk=>{
     if(userHasRole[mk]){ roleNeedsSide[mk]=false; return; }  // 用户已有该角色 → 不补新
     let mx=0; userItems.forEach(it=>{
       if(mainRole(it.f)!==mk) return; const pf=portionOf(it.f);
       const dense=it.f[macroKey[mk]]>=DENSITY_MIN[mk];
-      let g; if(it.free) g=isVeg(it.f)?perFreeVegCap:pf.max;
+      let g; if(it.locked) g=it.grams;                       // 锁死项按用户克数算真实供给，不按上限高估
+        else if(it.free) g=isVeg(it.f)?perFreeVegCap:pf.max;
         else if(it.grams>=pf.max) g=pf.max;
         else if(dense) g=pf.max;
         else g=Math.min(it.grams,pf.max);
@@ -1288,7 +1308,8 @@ function computeCustomMatched(matched, tgt){
   userItems.forEach((it,i)=>{
     const pf=portionOf(it.f); const mr=mainRole(it.f);
     let base,ub,lb;
-    if(it.free){ const pf2=portionOf(it.f);
+    if(it.locked){ base=it.grams; ub=it.grams; lb=it.grams; }  // 用户手动编辑的克数：完全锁死，由其他项配平补回缺口
+    else if(it.free){ const pf2=portionOf(it.f);
       const vCap=isVeg(it.f)?perFreeVegCap:pf2.max;   // free 蔬菜受合计封顶约束
       const isMain=canScaleUp(it.f,mr);
       if(!isMain){
@@ -1411,7 +1432,7 @@ function computeCustomMatched(matched, tgt){
     const fc=finalG/100;
     const reduceGrams=Math.max(0, it.grams-finalG);
     const addGrams=Math.max(0, finalG-it.grams);
-    plan.push({name:it.name, grams:it.grams, addGrams, reduceGrams, free:it.free,
+    plan.push({name:it.name, grams:it.grams, addGrams, reduceGrams, free:it.free, mi:i, locked:!!it.locked,
       carb:it.f.carb*fc, prot:it.f.p*fc, fat:it.f.f*fc, fiber:(it.f.fiber||0)*fc, vc:(it.f.vc||0)*fc,
       role:mainRole(it.f), add:false, roleAdd:null, f:it.f});
   });
@@ -1429,11 +1450,14 @@ function computeCustomMatched(matched, tgt){
     _dbg:{feasible, gs, b:null, newAdd, userFinal, repIdx:null}};
 }
 
-function calcCustom(){
+function calcCustom(opts){
+  opts = opts || {};
+  const reuse = !!opts.reuse;                       // 编辑克数后重算：沿用已存的原始输入与锁定表
   const out = document.getElementById('customOut');
   const hint = document.getElementById('customHint');
-  const raw = document.getElementById('customFoods').value;
-  if(!raw.trim()){ hint.textContent='请先输入食材'; out.innerHTML=''; return; }
+  const raw = reuse ? (window._customEdit && window._customEdit.raw) : document.getElementById('customFoods').value;
+  if(!raw || !raw.trim()){ hint.textContent='请先输入食材'; out.innerHTML=''; return; }
+  const locks = reuse ? window._customEdit.locks : (window._customEdit={raw:raw, locks:{}, baseRec:{}}).locks;
   // 解析食材（逗号/顿号/空格/换行分隔）
   const parts = raw.split(/[,，、\s\n]+/).filter(Boolean);
   // 匹配食材：只填名称，克数全部由系统推荐(free)
@@ -1441,6 +1465,10 @@ function calcCustom(){
   parts.forEach(p=>{ const f=matchFood(p);
     if(f) matched.push({name:foodName(f), f, grams:0, free:true});
     else unknown.push(p); });
+  if(window._customEdit) window._customEdit._names=matched.map(m=>m.f);   // 供软提示按索引查食物区间
+  // 应用用户手动锁定的克数：这些项锁死，其余项在剩余目标上自动配平补回缺口
+  Object.keys(locks).forEach(k=>{ const mi=+k; if(matched[mi]){
+    matched[mi].grams=locks[k]; matched[mi].free=false; matched[mi].locked=true; } });
 
   // 该餐目标（按当前体重+系数）
   const w = parseFloat(document.getElementById('weight').value) || 0;
@@ -1448,7 +1476,16 @@ function calcCustom(){
   const tgt = {carb:T.carb*customRatio, prot:T.prot*customRatio, fat:T.fat*customRatio};
 
   const res = computeCustomMatched(matched, tgt);
-  const {plan, ac, ap, af, ak, aFiber, aVc, addInfo, reduceAdvice} = res;
+  let {plan, ac, ap, af, ak, aFiber, aVc, addInfo, reduceAdvice} = res;
+  // 手动微调模式（存在用户锁定的克数）：不外推新食材 —— 丢弃求解器附赠的侧食(add项)，
+  // 只保留用户已选食材。gramGuard 已确保去掉侧食后用户项仍达标，这里仅同步合计与提示。
+  const hasLocks=Object.keys(locks).length>0;
+  if(hasLocks && plan.some(p=>p.add)){
+    plan=plan.filter(p=>!p.add);
+    ac=plan.reduce((s,p)=>s+p.carb,0); ap=plan.reduce((s,p)=>s+p.prot,0); af=plan.reduce((s,p)=>s+p.fat,0);
+    ak=ac*4+ap*4+af*9; aFiber=plan.reduce((s,p)=>s+(p.fiber||0),0); aVc=plan.reduce((s,p)=>s+(p.vc||0),0);
+    addInfo=addInfo.filter(a=>!a.free&&a.addGrams===undefined);   // 清掉侧食类补充建议
+  }
 
   let html='';
   // 未知食材提示
@@ -1461,37 +1498,22 @@ function calcCustom(){
     out.innerHTML=html; hint.textContent=''; return;
   }
 
-  // 计算成功 → 记录到该餐次历史
-  pushHist(curCustomMeal, raw);
+  // 计算成功 → 记录到该餐次历史（编辑重算不重复记录）
+  if(!reuse) pushHist(curCustomMeal, raw);
 
   // 渲染每样克数（建议添加食材用文本颜色区分）
   const mealName=({bf:'早餐',ln:'午餐',dn:'晚餐'})[document.querySelector('#customMealSel .msbtn.active').dataset.meal];
   html += `<div class="meal ln"><h4>你这一餐（${mealName}）</h4>`+
+    `<div id="gramRejectTip" class="gram-reject-tip"></div>`+
     `<div class="pct">目标：碳水 ${R(tgt.carb)}g · 蛋白 ${R(tgt.prot)}g · 脂肪 ${R(tgt.fat)}g</div>`;
-  html += `<div class="custom-legend"><span class="lg"><span class="sw user"></span>你选的食材</span>`+
-    `<span class="lg"><span class="sw add"></span>建议补充的食材</span></div>`;
+  html += `<div class="custom-legend"><span class="lg"><span class="sw user"></span>你选的食材（克数可改）</span>`+
+    `<span class="lg"><span class="sw add"></span>建议补充的食材</span>`+
+    `<button type="button" id="gramRecoverBtn" class="gram-recover" onclick="resetGramEdits()">恢复推荐克数</button></div>`;
   plan.forEach(p=>{
     const roleTag=p.f.c;   // 显示真实食物类别，不拿宏量角色冒充类别
     const addCls=p.add?' add':'';
     const badge=p.add?'<span class="badge-add">建议添加</span>':'';
     // 重量显示：未填重量→建议量；减量优先，其次加量
-    let gShow, needTag='';
-    if(p.free){
-      const rec=(p.grams+p.addGrams);
-      gShow=`建议 ${R(rec)}`;
-      needTag=`<span class="fg-need free">建议吃这么多</span>`;
-    }else if(p.reduceGrams>0){
-      const to=R(p.grams - p.reduceGrams);
-      gShow=`${R(p.grams)} → ${to}`;
-      needTag=`<span class="fg-need">建议减 ${R(p.reduceGrams)}g</span>`;
-    }else if(p.addGrams>0){
-      const a=(p.grams>=100?R(p.grams):p.grams.toFixed(0));
-      const b=R(p.addGrams);
-      gShow=`${a} + ${b}`;
-      needTag=`<span class="fg-need">需加 ${b}g</span>`;
-    }else{
-      gShow=p.grams>=100?R(p.grams):(p.grams>=50?R(p.grams):p.grams.toFixed(0));
-    }
     const freeCls=(p.free&&!p.add)?' free':'';
     // 该份食物（最终推荐克数）所含三大宏量：优先用最终克数(建议量/加减后)推算
     const finalG=(p.free?(p.grams+p.addGrams):(p.grams-p.reduceGrams+p.addGrams));
@@ -1499,8 +1521,36 @@ function calcCustom(){
     const mC=p.f.carb*fc2, mP=p.f.p*fc2, mF=p.f.f*fc2;
     const mKcal=Math.round(mC*4+mP*4+mF*9);
     const macroLine=`<span class="fmacro">蛋白 ${R(mP)}g · 碳水 ${R(mC)}g · 脂肪 ${R(mF)}g · ${mKcal}kcal</span>`;
+    let gCell;
+    if(!p.add){
+      // 用户选的食材：克数可编辑。基准推荐值只在首次计算记录一次，避免编辑后区间随锁定值漂移。
+      if(!reuse && window._customEdit && p.mi!==undefined) window._customEdit.baseRec[p.mi]=Math.round(finalG);
+      const baseG=(window._customEdit && window._customEdit.baseRec && window._customEdit.baseRec[p.mi]!=null)?window._customEdit.baseRec[p.mi]:Math.round(finalG);
+      const rng=gramEditRange(p.f, baseG);
+      const rangeMark=`<span class="gram-range">建议 ${rng.lo}–${rng.hi}g</span>`;
+      gCell=`<span class="gram-box"><input class="gram-edit${p.locked?' locked':''}" type="number" min="0" max="2000" step="1" value="${Math.round(finalG)}" data-mi="${p.mi}" data-rec="${Math.round(finalG)}" onchange="onGramEdit(this)" aria-label="编辑${p.name}克数"><span class="gram-unit">g</span>${rangeMark}</span>`;
+    }else{
+      let gShow, needTag='';
+      if(p.free){
+        const rec=(p.grams+p.addGrams);
+        gShow=`建议 ${R(rec)}`;
+        needTag=`<span class="fg-need free">建议吃这么多</span>`;
+      }else if(p.reduceGrams>0){
+        const to=R(p.grams - p.reduceGrams);
+        gShow=`${R(p.grams)} → ${to}`;
+        needTag=`<span class="fg-need">建议减 ${R(p.reduceGrams)}g</span>`;
+      }else if(p.addGrams>0){
+        const a=(p.grams>=100?R(p.grams):p.grams.toFixed(0));
+        const b=R(p.addGrams);
+        gShow=`${a} + ${b}`;
+        needTag=`<span class="fg-need">需加 ${b}g</span>`;
+      }else{
+        gShow=p.grams>=100?R(p.grams):(p.grams>=50?R(p.grams):p.grams.toFixed(0));
+      }
+      gCell=`<span><span class="fg">${gShow} g</span>${needTag}</span>`;
+    }
     html+=`<div class="food-item"><span class="fn${addCls}${freeCls}">${p.name}${badge}<br><span style="font-size:11px;color:var(--muted)">${roleTag}</span>${macroLine}</span>`+
-      `<span><span class="fg">${gShow} g</span>${needTag}</span></div>`;
+      gCell+`</div>`;
   });
   const tKcal=Math.round(tgt.carb*4+tgt.prot*4+tgt.fat*9);
   const diffTag=(a,t)=>{ if(!t) return ''; const pct=Math.round((a-t)/t*100);
@@ -1538,6 +1588,128 @@ function calcCustom(){
 
   out.innerHTML=html;
   hint.textContent = `已识别 ${matched.length} 种食材` + (addInfo.length?`，补充 ${addInfo.length} 种建议食材`:'') + (unknown.length?`，${unknown.length} 种未识别`:``);
+  // 供 onGramEdit 生成「配平后达标情况」软提示（不改任何既有逻辑，仅记录结果）
+  if(window._customEdit) window._customEdit._last={ac, ap, af, tgt:{carb:tgt.carb,prot:tgt.prot,fat:tgt.fat}};
+}
+
+/* 编辑某食材推荐克数：把该项锁死为输入值，其余食材在剩余目标上重新配平。
+   关键：走同一个 computeCustomMatched 求解器（含 isCarbMain/canScaleUp 护栏），
+   不另起分配逻辑——缺失的碳水只会补给真主食，绝不会补进酸奶/蓝莓等搭配类。 */
+/* 《中国居民膳食指南2022》全天推荐量(g/天)——权威原文只给「全天量」，没有「一餐份量表」。
+   水果 200~350g/天；蔬菜≥300g(宝塔300~500)；奶及奶制品≥300ml液态奶当量；坚果适量(约10~25g/天)。 */
+const GUIDE_DAY = {
+  '水果': {lo:200, hi:350, label:'《中国居民膳食指南2022》水果 200~350g/天'},
+  '蔬菜': {lo:300, hi:500, label:'《中国居民膳食指南2022》蔬菜 300~500g/天'},
+  '奶豆': {lo:300, hi:500, label:'《中国居民膳食指南2022》奶及奶制品 300ml以上/天'},
+  '坚果': {lo:10,  hi:25,  label:'《中国居民膳食指南2022》坚果 10~25g/天'}
+};
+function gramEditRange(f, recG){
+  // 搭配类(水果/奶豆/蔬菜/坚果)：真依据=指南全天推荐量 × 当前餐次比例(早25/午40/晚35)。
+  // 上限防三餐累积超全天量(用户核心诉求)；下限放宽到「点缀」档，尊重用户「减少某食材」的需求。
+  // 关键：区间必须容纳系统自己的推荐值(recG)——否则用户看到的推荐克数一编辑就被判非法，荒谬。
+  // 故上限=max(全天折算, 推荐值)；高密度类(坚果/奶豆)折算值偏小，以推荐值为准并用全天量作天花板。
+  const SIDE={ '水果':1, '奶豆':1, '蔬菜':1, '坚果':1 };
+  if(SIDE[f.c] && GUIDE_DAY[f.c]){
+    const gd=GUIDE_DAY[f.c];
+    const ratio=customRatio||0.25;
+    const foldHi=Math.round(gd.hi*ratio);                 // 全天上限按本餐折算
+    const baseHi=Math.max(8, foldHi);
+    // 系统推荐值若高于折算上限(高密度类常见)：采用推荐值，但不得越过全天推荐量本身
+    const hi=Math.max(baseHi, Math.min(gd.hi, Math.round(recG||0)));
+    const lo=Math.min(hi, Math.max(5, Math.round(gd.lo*ratio*0.4)));
+    return {lo, hi, basis:'指南全天量折算', guide:gd.label, ratio};
+  }
+  // 主力(主食/肉蛋水产)：按该餐宏量目标反推「独占目标所需克数」再放宽上限。
+  const pf=portionOf(f);
+  const mk=mainRole(f);
+  const per100=f[mk==='carb'?'carb':mk==='prot'?'p':'f']||1;
+  return {lo:10, hi:Math.max(pf.max, Math.round(160/per100)), basis:'目标'};
+}
+/* 编辑建议计算器（2026-11-16 需求变更：从「硬拦截守卫」降级为「建议计算」）。
+   UI 已不再拦截用户的克数改动——任何值都接受并配平；本函数仅保留「区间+试算」的纯逻辑
+   供底层自检参考其区间/达标判据，onGramEdit 不再依据它的 ok 拦人。返回 {ok, prevG, msg}。 */
+function gramGuard(mi, want, recG){
+  const ed=window._customEdit;
+  if(!ed) return {ok:true};
+  const prevG=(ed.locks[mi]!==undefined)? ed.locks[mi] : recG;
+  const parts=ed.raw.split(/[,，、\s\n]+/).filter(Boolean);
+  const matched=[];
+  parts.forEach(p=>{ const f=matchFood(p); if(f) matched.push({name:foodName(f),f,grams:0,free:true}); });
+  Object.keys(ed.locks).forEach(k=>{ const idx=+k; if(matched[idx]){
+    matched[idx].grams=ed.locks[k]; matched[idx].free=false; matched[idx].locked=true; } });
+  const f=matched[mi] && matched[mi].f;
+  if(!f) return {ok:false, prevG, msg:'未识别的食材'};
+  // 第一关：单餐合理区间
+  const w=parseFloat(document.getElementById('weight').value)||0;
+  const T={carb:w*curCoef.carb,prot:w*curCoef.prot,fat:w*curCoef.fat};
+  const tgt={carb:T.carb*customRatio,prot:T.prot*customRatio,fat:T.fat*customRatio};
+  const range=gramEditRange(f, recG);
+  if(want<range.lo || want>range.hi){
+    const why = range.basis==='指南全天量折算'
+      ? `${range.guide}，按本餐${Math.round(range.ratio*100)}%折算`
+      : '依据本餐宏量目标';
+    return {ok:false, prevG, msg:`${foodName(f)}本餐建议 ${range.lo}–${range.hi}g（${why}），${want}g超出范围`};
+  }
+  // 第二关：只看「用户已选食材」能否达标（手动模式不外推新食材）。
+  //   求解器可能附赠侧食(add)，但只要去掉侧食后用户项仍达标 → 放行，渲染时丢弃侧食；
+  //   若去掉侧食就不达标（必须靠外推才达标）→ 拦下。这正是「不外推新食材」的精确判据。
+  const trial=matched.map((x,i)=> i===mi? {...x, grams:want, free:false, locked:true} : {...x});
+  const res=computeCustomMatched(trial, tgt);
+  const userC=res.plan.reduce((s,p)=>s+(p.add?0:p.carb),0);
+  const userP=res.plan.reduce((s,p)=>s+(p.add?0:p.prot),0);
+  const userF=res.plan.reduce((s,p)=>s+(p.add?0:p.fat),0);
+  const devC=(userC-tgt.carb)/tgt.carb, devP=(userP-tgt.prot)/tgt.prot, devF=(userF-tgt.fat)/tgt.fat;
+  const balanced=[devC,devP,devF].every(d=> d>=-0.20 && d<=0.15);
+  if(!balanced)
+    return {ok:false, prevG, msg:`${foodName(f)}改成${want}g会导致这一餐营养不达标（需外推新食材，已禁用）`};
+  return {ok:true, prevG};
+}
+/* 软建议提示（2026-11-16 需求变更）：不再弹回克数，只把「超出建议区间」写进卡片内槽位。
+   用户改动一律生效；提示仅告知参考区间与依据，决定权在用户。 */
+function gramEditReject(msg){
+  const tip=document.getElementById('gramRejectTip');
+  if(tip){ tip.textContent='💡 '+msg; tip.classList.add('show'); }
+}
+function gramEditClearTip(){
+  const tip=document.getElementById('gramRejectTip');
+  if(tip){ tip.textContent=''; tip.classList.remove('show'); }
+}
+function onGramEdit(input){
+  const mi=+input.dataset.mi;
+  const want=Math.max(0, Math.min(2000, Math.round(parseFloat(input.value)||0)));
+  input.value=want;
+  if(!window._customEdit) return;
+  // 无条件接受用户克数：锁定该项，其余食材在同一求解器上按「缺口补给对应主力」自动配平。
+  window._customEdit.locks[mi]=want;
+  calcCustom({reuse:true});   // 走同一求解器重算 + 重渲染
+  // 软提示（2026-11-16）：只建议、不弹回、不撤销配平。两类提醒：①超出单类建议区间；②配平后某成分明显偏离目标。
+  const f=window._customEdit._names && window._customEdit._names[mi];
+  const baseG=(window._customEdit.baseRec && window._customEdit.baseRec[mi]!=null)?window._customEdit.baseRec[mi]:want;
+  const rng=f?gramEditRange(f, baseG):null;
+  let advice='';
+  if(rng && (want<rng.lo || want>rng.hi)){
+    const why=rng.basis==='指南全天量折算'
+      ? `${rng.guide}，按本餐${Math.round(rng.ratio*100)}%折算`
+      : '依据本餐宏量目标';
+    advice=`${foodName(f)}本餐建议 ${rng.lo}–${rng.hi}g（${why}），你填的 ${want}g`+
+      `${want>rng.hi?'偏多':'偏少'}；已按你的克数让其他食材配平，仅供参考。`;
+  }
+  // 配平后达标情况：只在明显偏离(<-15% 或 >+20%)时提示，避免正常热量权衡被误报。
+  const last=window._customEdit._last;
+  if(!advice && last){
+    const dev=[['碳水',last.ac,last.tgt.carb],['蛋白',last.ap,last.tgt.prot],['脂肪',last.af,last.tgt.fat]];
+    const bad=dev.filter(([n,v,t])=>t>0 && ((v-t)/t < -0.15 || (v-t)/t > 0.20))
+      .map(([n,v,t])=>`${n} ${Math.round((v-t)/t*100)}%`);
+    if(bad.length) advice=`这样配下来 ${bad.join('、')}，已偏离本餐目标；决定权在你，可微调其他项或点「恢复推荐克数」。`;
+  }
+  if(advice) gramEditReject(advice); else gramEditClearTip();
+}
+/* 恢复系统推荐克数：清空所有锁定，回到纯 free 求解 */
+function resetGramEdits(){
+  if(!window._customEdit) return;
+  window._customEdit.locks={};
+  gramEditClearTip();
+  calcCustom({reuse:true});
 }
 
 /* 从库中挑一种该角色密度高、且未被选中的食材，给出建议份量 */
@@ -1587,7 +1759,7 @@ renderCustomHist();
    （no-store + 随机参数，绕开 iOS PWA 缓存），解析出线上版本号，与本地不一致即提示。
    file:// 本地预览 / 离线 / 请求失败 / 无 DOM 环境（自检 mock）一律静默降级。 */
 (function(){
-  var APP_VER='20261111-1124';
+  var APP_VER='20261117-1042';
   var SKIP_KEY='mealAppSkipVer_v1';
   var last=0, busy=false, remoteVer='';
   try{

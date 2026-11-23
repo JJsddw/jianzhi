@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- 版本号：每次部署必须 +1（与文末 APP_VER 常量保持一致），供旧页面检测更新用 -->
-<meta name="app-ver" content="20261123-1119">
+<meta name="app-ver" content="20261123-1451">
 <title>谭成义减脂规划期</title>
 <!-- ===== PWA / iOS 主屏幕安装 ===== -->
 <meta name="theme-color" content="#87CEEB">
@@ -568,6 +568,7 @@ const foods = [
   {n:"猪肝",c:"肉蛋水产",k:129,carb:5,p:19.3,f:3.5,fiber:0,vc:20,ca:6,fe:22.6,zn:5.78,mg:21,pot:235},
   {n:"鸡肝",c:"肉蛋水产",k:121,carb:2.8,p:16.6,f:4.8,fiber:0,vc:0,ca:7,fe:12,zn:2.4,mg:18,pot:222},
   {n:"龙利鱼",c:"肉蛋水产",k:83,carb:0,p:17.7,f:1.4,fiber:0,vc:0,ca:57,fe:1.5,zn:0.8,mg:27,pot:309},
+  {n:"鸡胸肉丸(自制)",c:"肉蛋水产",k:140,carb:6.7,p:17.9,f:4.5,fiber:0,vc:0,ca:4,fe:0.6,zn:0.47,mg:25.6,pot:306},
   {n:"牛奶(全脂)",c:"奶豆",k:64,carb:4.8,p:3.2,f:3.8,fiber:0,vc:0,ca:104,fe:0.1,zn:0.42,mg:11,pot:109},
   {n:"酸奶(原味)",c:"奶豆",k:72,carb:4.9,p:3.8,f:3.2,fiber:0,vc:0,ca:118,fe:0.1,zn:0.5,mg:12,pot:150},
   {n:"豆腐",c:"奶豆",k:82,carb:3,p:8.1,f:4.8,fiber:0.4,vc:0,ca:164,fe:1.9,zn:1.11,mg:27,pot:125},
@@ -1219,8 +1220,11 @@ function matchFood(raw){
   // 去掉括号/别称再试
   const keys = Object.keys(byName);
   for(const k of keys){ if(k===q || k.replace(/\s/g,'')===q.replace(/\s/g,'')) return byName[k]; }
-  // 包含匹配
-  for(const k of keys){ if(k.includes(q) || q.includes(k)) return byName[k]; }
+  // 包含匹配（两轮分先后，避免短名截胡长名，如"鸡胸肉丸"应命中"鸡胸肉丸(自制)"而非"鸡胸肉"）
+  //   第一轮：库名包含输入 → 更具体，优先
+  for(const k of keys){ if(k.includes(q)) return byName[k]; }
+  //   第二轮：输入包含库名 → 兼容"苹果派"→"苹果"这类模糊输入
+  for(const k of keys){ if(q.includes(k)) return byName[k]; }
   return null;
 }
 
@@ -1874,7 +1878,7 @@ renderCustomHist();
    （no-store + 随机参数，绕开 iOS PWA 缓存），解析出线上版本号，与本地不一致即提示。
    file:// 本地预览 / 离线 / 请求失败 / 无 DOM 环境（自检 mock）一律静默降级。 */
 (function(){
-  var APP_VER='20261123-1119';
+  var APP_VER='20261123-1451';
   var SKIP_KEY='mealAppSkipVer_v1';
   var last=0, busy=false, remoteVer='';
   try{

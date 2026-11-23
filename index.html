@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- 版本号：每次部署必须 +1（与文末 APP_VER 常量保持一致），供旧页面检测更新用 -->
-<meta name="app-ver" content="20261117-1107">
+<meta name="app-ver" content="20261123-1119">
 <title>谭成义减脂规划期</title>
 <!-- ===== PWA / iOS 主屏幕安装 ===== -->
 <meta name="theme-color" content="#87CEEB">
@@ -133,6 +133,9 @@
     font-size:13px;padding:6px 14px;cursor:pointer;}
   .fbtn.active{background:#E6F1FB;border-color:var(--carb);color:var(--carb);}
   table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;}
+  #foodTable{min-width:880px;}
+  #foodTable .th-food,#foodTable td.c-food{width:132px;}
+  #foodTable th:not(.th-food),#foodTable td:not(.c-food){width:68px;}
   th{background:#f2f2f0;text-align:left;padding:9px 10px;font-weight:600;}
   th .u{font-weight:400;color:var(--hint);font-size:11px;}
   td{padding:8px 10px;border-top:1px solid var(--line);}
@@ -246,6 +249,19 @@
   .custom-legend .sw.free{background:#b8860b;}
   .custom-legend .sw.add{background:#993C1D;}
   .custom-legend .sw.reduce{background:#c0392b;}
+  /* 自定义菜单：三行营养卡（2026-11-18）——标题行+克组4格+毫克组6格 */
+  .food-item.nutri-card{display:block;padding:11px 0;}
+  .nutri-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .nutri-head .fn{line-height:1.3;}
+  .nutri-head .nutri-cat{display:block;font-size:11px;color:var(--muted);margin-top:1px;}
+  .nutri-head .gram-box{flex-shrink:0;}
+  .nutri-grid{display:grid;gap:4px;margin-top:8px;width:100%;}
+  .nutri-grid.g{grid-template-columns:repeat(4,1fr);}
+  .nutri-grid.mg{grid-template-columns:repeat(6,1fr);background:var(--info-fill,#EAF0F6);border-radius:8px;padding:6px 3px;}
+  .nutri-cell{text-align:center;min-width:0;font-variant-numeric:tabular-nums;}
+  .nutri-cell .nl{display:block;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .nutri-cell .nv{display:block;font-size:12.5px;color:var(--ink);font-weight:600;margin-top:1px;}
+  .nutri-cell .nv.dim{color:var(--hint);font-weight:400;}
   .suggest{background:#FFF7ED;border:1px solid #F5D9B8;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#8a5a1e;margin-top:14px;line-height:1.7;}
   .suggest b{color:#a8510f;}
   .suggest ul{margin:6px 0 0;padding-left:20px;}
@@ -481,22 +497,27 @@
       <button class="fbtn" data-cat="坚果">坚果</button>
     </div>
     <div class="scroll">
-      <table>
+      <table id="foodTable">
         <thead>
           <tr>
-            <th style="width:20%">食物</th>
-            <th class="num" style="width:13%">热量<br><span class="u">kcal</span></th>
-            <th class="num" style="width:13%">碳水<br><span class="u">g</span></th>
-            <th class="num" style="width:13%">蛋白质<br><span class="u">g</span></th>
-            <th class="num" style="width:13%">脂肪<br><span class="u">g</span></th>
-            <th class="num" style="width:14%">膳食纤维<br><span class="u">g</span></th>
-            <th class="num" style="width:14%">维生素C<br><span class="u">mg</span></th>
+            <th class="th-food">食物</th>
+            <th class="num">热量<br><span class="u">kcal</span></th>
+            <th class="num">碳水<br><span class="u">g</span></th>
+            <th class="num">蛋白质<br><span class="u">g</span></th>
+            <th class="num">脂肪<br><span class="u">g</span></th>
+            <th class="num">膳食纤维<br><span class="u">g</span></th>
+            <th class="num">维生素C<br><span class="u">mg</span></th>
+            <th class="num">钙<br><span class="u">mg</span></th>
+            <th class="num">铁<br><span class="u">mg</span></th>
+            <th class="num">锌<br><span class="u">mg</span></th>
+            <th class="num">镁<br><span class="u">mg</span></th>
+            <th class="num">钾<br><span class="u">mg</span></th>
           </tr>
         </thead>
         <tbody id="foodBody"></tbody>
       </table>
     </div>
-    <p class="note">数据依据《中国食物成分表(第6版)》(中国疾病预防控制中心营养与健康所编著)，为每 100g 可食部分近似值，仅供参考。膳食纤维与维生素 C 缺省（—）表示含量较少或不显著。生重数据（除标注「熟」），烹饪后水分变化会影响实际克数。</p>
+    <p class="note">数据依据《中国食物成分表(第6版)》(中国疾病预防控制中心营养与健康所编著)，为每 100g 可食部分近似值，仅供参考。表格可左右滑动查看全部 12 项；含量为 0 显示「-」表示含量较少或不显著。生重数据（除标注「熟」），烹饪后水分变化会影响实际克数。</p>
     </div>
   </div>
 </div>
@@ -504,61 +525,116 @@
 <script>
 /* ---------- 食物数据库（每100g） ---------- */
 const foods = [
-  {n:"米饭(熟)",c:"主食",k:116,carb:25.9,p:2.6,f:0.3,fiber:0.3,vc:0},
-  {n:"面条(煮)",c:"主食",k:110,carb:23.8,p:2.7,f:0.2,fiber:0.4,vc:0},
-  {n:"馒头",c:"主食",k:223,carb:45.7,p:7,f:1.1,fiber:1.3,vc:0},
-  {n:"全麦面包",c:"主食",k:247,carb:41,p:13,f:3,fiber:7,vc:0},
-  {n:"燕麦",c:"主食",k:389,carb:66.9,p:14.4,f:9.7,fiber:10,vc:0},
-  {n:"红薯",c:"主食",k:86,carb:20.1,p:1.6,f:0.2,fiber:3,vc:26},
-  {n:"玉米",c:"主食",k:106,carb:20.5,p:4,f:1.2,fiber:2.7,vc:6},
-  {n:"土豆",c:"主食",k:77,carb:17.2,p:2,f:0.2,fiber:2.2,vc:19},
-  {n:"贝贝南瓜",c:"主食",k:23,carb:5.3,p:0.6,f:0.1,fiber:0.8,vc:6},
-  {n:"鸡胸肉",c:"肉蛋水产",k:165,carb:0,p:31,f:3.6,fiber:0,vc:0},
-  {n:"牛肉(瘦)",c:"肉蛋水产",k:106,carb:0.5,p:22.2,f:1.9,fiber:0,vc:0},
-  {n:"猪肉(瘦)",c:"肉蛋水产",k:143,carb:1.5,p:20.2,f:6.2,fiber:0,vc:0},
-  {n:"羊肉",c:"肉蛋水产",k:118,carb:0.2,p:20.5,f:3.9,fiber:0,vc:0},
-  {n:"三文鱼",c:"肉蛋水产",k:139,carb:0,p:20.8,f:6.3,fiber:0,vc:0},
-  {n:"虾仁",c:"肉蛋水产",k:99,carb:0.2,p:24,f:0.3,fiber:0,vc:0},
-  {n:"鸡蛋",c:"肉蛋水产",k:143,carb:1.5,p:12.7,f:8.8,fiber:0,vc:0},
-  {n:"牛奶(全脂)",c:"奶豆",k:64,carb:4.8,p:3.2,f:3.8,fiber:0,vc:0},
-  {n:"酸奶(原味)",c:"奶豆",k:72,carb:4.9,p:3.8,f:3.2,fiber:0,vc:0},
-  {n:"豆腐",c:"奶豆",k:82,carb:3,p:8.1,f:4.8,fiber:0.4,vc:0},
-  {n:"豆浆",c:"奶豆",k:16,carb:1.1,p:1.8,f:0.7,fiber:0.5,vc:0},
-  {n:"西兰花",c:"蔬菜",k:34,carb:7,p:4.1,f:0.6,fiber:2.6,vc:89},
-  {n:"菠菜",c:"蔬菜",k:28,carb:4.5,p:2.6,f:0.3,fiber:2.2,vc:28},
-  {n:"胡萝卜",c:"蔬菜",k:39,carb:9.5,p:1,f:0.2,fiber:2.8,vc:6},
-  {n:"黄瓜",c:"蔬菜",k:16,carb:2.9,p:0.7,f:0.2,fiber:0.9,vc:9},
-  {n:"番茄",c:"蔬菜",k:18,carb:4,p:0.9,f:0.2,fiber:1.2,vc:19},
-  {n:"洋葱",c:"蔬菜",k:40,carb:9,p:1.1,f:0.1,fiber:1.7,vc:8},
-  {n:"生菜",c:"蔬菜",k:15,carb:2.1,p:1.3,f:0.2,fiber:1.3,vc:15},
-  {n:"彩椒",c:"蔬菜",k:31,carb:6,p:1,f:0.3,fiber:2.1,vc:120},
-  {n:"香蕉",c:"水果",k:91,carb:22,p:1.4,f:0.2,fiber:2.6,vc:8},
-  {n:"苹果",c:"水果",k:53,carb:13.7,p:0.2,f:0.2,fiber:2.4,vc:4},
-  {n:"橙子",c:"水果",k:47,carb:12,p:0.9,f:0.1,fiber:2.4,vc:37},
-  {n:"葡萄",c:"水果",k:43,carb:10.3,p:0.5,f:0.2,fiber:0.9,vc:3},
-  {n:"蓝莓",c:"水果",k:57,carb:14,p:0.7,f:0.3,fiber:2.4,vc:9},
-  {n:"杏仁",c:"坚果",k:575,carb:17,p:21.2,f:50.6,fiber:12,vc:0},
-  {n:"核桃",c:"坚果",k:646,carb:10,p:14.9,f:65.2,fiber:9,vc:1},
-  {n:"花生",c:"坚果",k:567,carb:16.2,p:25.8,f:44.3,fiber:8,vc:0},
-  {n:"山药",c:"主食",k:57,carb:12.4,p:1.9,f:0.2,fiber:0.8,vc:5},
-  {n:"紫薯",c:"主食",k:82,carb:15.9,p:1.3,f:0.2,fiber:2.5,vc:0},
-  {n:"蛋清",c:"肉蛋水产",k:60,carb:3.2,p:11.6,f:0.1,fiber:0,vc:0},
-  {n:"豆干",c:"奶豆",k:147,carb:3.3,p:16,f:8.2,fiber:0,vc:0},
-  {n:"香菇",c:"蔬菜",k:34,carb:5.2,p:2.2,f:0.3,fiber:3.3,vc:0},
-  {n:"金针菇",c:"蔬菜",k:32,carb:6,p:2.4,f:0.4,fiber:2.7,vc:0},
-  {n:"海带",c:"蔬菜",k:13,carb:2.1,p:1.2,f:0.1,fiber:0.5,vc:0},
-  {n:"杏鲍菇",c:"蔬菜",k:35,carb:8.3,p:1.3,f:0.1,fiber:2.1,vc:0},
-  {n:"空心菜",c:"蔬菜",k:20,carb:3.6,p:2.2,f:0.3,fiber:1.4,vc:25},
-  {n:"西葫芦",c:"蔬菜",k:18,carb:3.8,p:0.8,f:0.2,fiber:0.6,vc:6},
-  {n:"冬瓜",c:"蔬菜",k:12,carb:2.6,p:0.4,f:0.2,fiber:0.7,vc:18},
-  {n:"丝瓜",c:"蔬菜",k:20,carb:4.2,p:1,f:0.2,fiber:0.6,vc:5},
-  {n:"芦笋",c:"蔬菜",k:19,carb:3.7,p:2.2,f:0.1,fiber:2.1,vc:6},
-  {n:"树莓",c:"水果",k:52,carb:12,p:1.2,f:0.7,fiber:6.5,vc:26},
-  {n:"西柚",c:"水果",k:33,carb:8.1,p:0.7,f:0.1,fiber:1.6,vc:34},
-  {n:"牛油果",c:"水果",k:161,carb:8.5,p:2,f:15.3,fiber:6.7,vc:8},
-  {n:"火龙果(白心)",c:"水果",k:55,carb:13.3,p:1.1,f:0.2,fiber:1.6,vc:3},
-  {n:"猕猴桃",c:"水果",k:61,carb:14.5,p:0.8,f:0.6,fiber:2.6,vc:62},
-  {n:"橄榄油",c:"坚果",k:899,carb:0,p:0,f:99.9,fiber:0,vc:0}
+  {n:"米饭(熟)",c:"主食",k:116,carb:25.9,p:2.6,f:0.3,fiber:0.3,vc:0,ca:7,fe:0.8,zn:0.92,mg:25,pot:39},
+  {n:"面条(煮)",c:"主食",k:110,carb:23.8,p:2.7,f:0.2,fiber:0.4,vc:0,ca:22,fe:1,zn:0.6,mg:20,pot:50},
+  {n:"馒头",c:"主食",k:223,carb:45.7,p:7,f:1.1,fiber:1.3,vc:0,ca:19,fe:1.8,zn:0.71,mg:28,pot:138},
+  {n:"全麦面包",c:"主食",k:247,carb:41,p:13,f:3,fiber:7,vc:0,ca:50,fe:2.5,zn:1.8,mg:80,pot:250},
+  {n:"燕麦",c:"主食",k:389,carb:66.9,p:14.4,f:9.7,fiber:10,vc:0,ca:58,fe:4.7,zn:3,mg:177,pot:429},
+  {n:"红薯",c:"主食",k:86,carb:20.1,p:1.6,f:0.2,fiber:3,vc:26,ca:23,fe:0.6,zn:0.3,mg:25,pot:337},
+  {n:"玉米",c:"主食",k:106,carb:20.5,p:4,f:1.2,fiber:2.7,vc:6,ca:10,fe:1.5,zn:0.9,mg:96,pot:238},
+  {n:"土豆",c:"主食",k:77,carb:17.2,p:2,f:0.2,fiber:2.2,vc:19,ca:8,fe:0.8,zn:0.37,mg:23,pot:342},
+  {n:"贝贝南瓜",c:"主食",k:23,carb:5.3,p:0.6,f:0.1,fiber:0.8,vc:6,ca:16,fe:0.4,zn:0.14,mg:12,pot:340},
+  {n:"山药",c:"主食",k:57,carb:12.4,p:1.9,f:0.2,fiber:0.8,vc:5,ca:16,fe:0.3,zn:0.27,mg:20,pot:213},
+  {n:"紫薯",c:"主食",k:82,carb:15.9,p:1.3,f:0.2,fiber:2.5,vc:0,ca:23,fe:0.6,zn:0.3,mg:25,pot:300},
+  {n:"糙米",c:"主食",k:368,carb:77,p:7.4,f:2.7,fiber:3.4,vc:0,ca:13,fe:1.8,zn:1.7,mg:110,pot:250},
+  {n:"小米",c:"主食",k:361,carb:75.1,p:9,f:3.1,fiber:1.6,vc:0,ca:41,fe:5.1,zn:1.87,mg:107,pot:284},
+  {n:"藜麦",c:"主食",k:368,carb:64,p:14,f:6,fiber:7,vc:0,ca:47,fe:4.6,zn:3.1,mg:197,pot:563},
+  {n:"荞麦",c:"主食",k:337,carb:70,p:9.3,f:2.3,fiber:6.5,vc:0,ca:47,fe:6.2,zn:3.62,mg:258,pot:401},
+  {n:"黑米",c:"主食",k:341,carb:72,p:9.4,f:2.5,fiber:3.9,vc:0,ca:12,fe:1.6,zn:3.8,mg:147,pot:256},
+  {n:"薏米",c:"主食",k:361,carb:71,p:12.8,f:3.3,fiber:2,vc:0,ca:42,fe:3.6,zn:1.68,mg:126,pot:238},
+  {n:"红豆",c:"主食",k:324,carb:63,p:20.2,f:0.6,fiber:7.7,vc:0,ca:74,fe:7.4,zn:2.2,mg:138,pot:860},
+  {n:"绿豆",c:"主食",k:329,carb:62,p:21.6,f:0.8,fiber:6.4,vc:0,ca:81,fe:6.5,zn:2.18,mg:125,pot:787},
+  {n:"鹰嘴豆",c:"主食",k:364,carb:61,p:19,f:6,fiber:12,vc:0,ca:105,fe:6.2,zn:3.4,mg:115,pot:718},
+  {n:"芋头",c:"主食",k:56,carb:12.7,p:2.2,f:0.2,fiber:4.1,vc:6,ca:36,fe:1,zn:0.49,mg:23,pot:378},
+  {n:"莲藕",c:"主食",k:70,carb:16.4,p:1.9,f:0.2,fiber:1.2,vc:44,ca:39,fe:1.4,zn:0.23,mg:19,pot:243},
+  {n:"荞麦面",c:"主食",k:140,carb:26,p:5.2,f:0.7,fiber:2.3,vc:0,ca:15,fe:1.2,zn:0.7,mg:40,pot:100},
+  {n:"鸡胸肉",c:"肉蛋水产",k:165,carb:0,p:31,f:3.6,fiber:0,vc:0,ca:13,fe:1.4,zn:1.1,mg:28,pot:338},
+  {n:"牛肉(瘦)",c:"肉蛋水产",k:106,carb:0.5,p:22.2,f:1.9,fiber:0,vc:0,ca:9,fe:2.8,zn:4.7,mg:21,pot:284},
+  {n:"猪肉(瘦)",c:"肉蛋水产",k:143,carb:1.5,p:20.2,f:6.2,fiber:0,vc:0,ca:6,fe:1.6,zn:2.99,mg:25,pot:305},
+  {n:"羊肉",c:"肉蛋水产",k:118,carb:0.2,p:20.5,f:3.9,fiber:0,vc:0,ca:9,fe:2.3,zn:3.22,mg:22,pot:230},
+  {n:"三文鱼",c:"肉蛋水产",k:139,carb:0,p:20.8,f:6.3,fiber:0,vc:0,ca:9,fe:0.4,zn:0.5,mg:30,pot:400},
+  {n:"虾仁",c:"肉蛋水产",k:99,carb:0.2,p:24,f:0.3,fiber:0,vc:0,ca:62,fe:1.5,zn:1.4,mg:37,pot:215},
+  {n:"鸡蛋",c:"肉蛋水产",k:143,carb:1.5,p:12.7,f:8.8,fiber:0,vc:0,ca:56,fe:2,zn:1.1,mg:10,pot:154},
+  {n:"蛋清",c:"肉蛋水产",k:60,carb:3.2,p:11.6,f:0.1,fiber:0,vc:0,ca:6,fe:0.1,zn:0.02,mg:9,pot:135},
+  {n:"鲈鱼",c:"肉蛋水产",k:105,carb:0,p:18.6,f:3.4,fiber:0,vc:0,ca:138,fe:1.2,zn:2.83,mg:37,pot:205},
+  {n:"鳕鱼",c:"肉蛋水产",k:88,carb:0,p:20.4,f:0.5,fiber:0,vc:0,ca:42,fe:0.5,zn:0.86,mg:84,pot:321},
+  {n:"带鱼",c:"肉蛋水产",k:127,carb:3.1,p:17.7,f:4.9,fiber:0,vc:0,ca:28,fe:1.2,zn:0.7,mg:43,pot:280},
+  {n:"黄花鱼",c:"肉蛋水产",k:97,carb:0,p:17.7,f:2.5,fiber:0,vc:0,ca:53,fe:0.7,zn:0.58,mg:39,pot:228},
+  {n:"基围虾",c:"肉蛋水产",k:101,carb:0,p:18.2,f:1.4,fiber:0,vc:0,ca:83,fe:2,zn:1.4,mg:45,pot:250},
+  {n:"扇贝",c:"肉蛋水产",k:60,carb:2.6,p:11.1,f:0.6,fiber:0,vc:0,ca:142,fe:7.2,zn:11.69,mg:39,pot:122},
+  {n:"牡蛎",c:"肉蛋水产",k:73,carb:4.9,p:5.3,f:2.1,fiber:0,vc:0,ca:131,fe:7.1,zn:9.39,mg:65,pot:200},
+  {n:"鸡腿肉(去皮)",c:"肉蛋水产",k:181,carb:0,p:19,f:10,fiber:0,vc:0,ca:12,fe:1.5,zn:1.9,mg:23,pot:280},
+  {n:"鸭肉",c:"肉蛋水产",k:240,carb:0,p:15.5,f:19.7,fiber:0,vc:0,ca:6,fe:2.2,zn:1.33,mg:19,pot:191},
+  {n:"猪肝",c:"肉蛋水产",k:129,carb:5,p:19.3,f:3.5,fiber:0,vc:20,ca:6,fe:22.6,zn:5.78,mg:21,pot:235},
+  {n:"鸡肝",c:"肉蛋水产",k:121,carb:2.8,p:16.6,f:4.8,fiber:0,vc:0,ca:7,fe:12,zn:2.4,mg:18,pot:222},
+  {n:"龙利鱼",c:"肉蛋水产",k:83,carb:0,p:17.7,f:1.4,fiber:0,vc:0,ca:57,fe:1.5,zn:0.8,mg:27,pot:309},
+  {n:"牛奶(全脂)",c:"奶豆",k:64,carb:4.8,p:3.2,f:3.8,fiber:0,vc:0,ca:104,fe:0.1,zn:0.42,mg:11,pot:109},
+  {n:"酸奶(原味)",c:"奶豆",k:72,carb:4.9,p:3.8,f:3.2,fiber:0,vc:0,ca:118,fe:0.1,zn:0.5,mg:12,pot:150},
+  {n:"豆腐",c:"奶豆",k:82,carb:3,p:8.1,f:4.8,fiber:0.4,vc:0,ca:164,fe:1.9,zn:1.11,mg:27,pot:125},
+  {n:"豆浆",c:"奶豆",k:16,carb:1.1,p:1.8,f:0.7,fiber:0.5,vc:0,ca:10,fe:0.5,zn:0.24,mg:9,pot:48},
+  {n:"豆干",c:"奶豆",k:147,carb:3.3,p:16,f:8.2,fiber:0,vc:0,ca:308,fe:4.9,zn:1.8,mg:60,pot:150},
+  {n:"低脂牛奶",c:"奶豆",k:47,carb:4.9,p:3.3,f:1.5,fiber:0,vc:0,ca:120,fe:0.1,zn:0.4,mg:12,pot:150},
+  {n:"奶酪",c:"奶豆",k:328,carb:3.5,p:25.7,f:23.5,fiber:0,vc:0,ca:799,fe:0.6,zn:3,mg:28,pot:75},
+  {n:"北豆腐",c:"奶豆",k:98,carb:2.4,p:12.2,f:4.8,fiber:0.5,vc:0,ca:138,fe:2.5,zn:1,mg:63,pot:158},
+  {n:"豆腐皮",c:"奶豆",k:409,carb:18.8,p:44.6,f:17.4,fiber:0.2,vc:0,ca:116,fe:13.9,zn:3.81,mg:150,pot:536},
+  {n:"腐竹",c:"奶豆",k:461,carb:22.3,p:44.6,f:21.7,fiber:1,vc:0,ca:77,fe:16.5,zn:3.69,mg:71,pot:553},
+  {n:"毛豆",c:"奶豆",k:131,carb:10.5,p:13.1,f:5,fiber:4,vc:27,ca:135,fe:3.5,zn:1.73,mg:65,pot:478},
+  {n:"黑豆",c:"奶豆",k:401,carb:33.6,p:36,f:15.9,fiber:10.2,vc:0,ca:224,fe:7,zn:4.18,mg:243,pot:1377},
+  {n:"西兰花",c:"蔬菜",k:34,carb:7,p:4.1,f:0.6,fiber:2.6,vc:89,ca:67,fe:1,zn:0.41,mg:21,pot:316},
+  {n:"菠菜",c:"蔬菜",k:28,carb:4.5,p:2.6,f:0.3,fiber:2.2,vc:28,ca:66,fe:2.9,zn:0.85,mg:58,pot:311},
+  {n:"胡萝卜",c:"蔬菜",k:39,carb:9.5,p:1,f:0.2,fiber:2.8,vc:6,ca:32,fe:0.5,zn:0.23,mg:12,pot:320},
+  {n:"黄瓜",c:"蔬菜",k:16,carb:2.9,p:0.7,f:0.2,fiber:0.9,vc:9,ca:24,fe:0.5,zn:0.18,mg:15,pot:102},
+  {n:"番茄",c:"蔬菜",k:18,carb:4,p:0.9,f:0.2,fiber:1.2,vc:19,ca:10,fe:0.4,zn:0.13,mg:11,pot:237},
+  {n:"洋葱",c:"蔬菜",k:40,carb:9,p:1.1,f:0.1,fiber:1.7,vc:8,ca:24,fe:0.6,zn:0.23,mg:13,pot:147},
+  {n:"生菜",c:"蔬菜",k:15,carb:2.1,p:1.3,f:0.2,fiber:1.3,vc:15,ca:36,fe:0.9,zn:0.27,mg:13,pot:194},
+  {n:"彩椒",c:"蔬菜",k:31,carb:6,p:1,f:0.3,fiber:2.1,vc:120,ca:14,fe:0.5,zn:0.2,mg:14,pot:211},
+  {n:"香菇",c:"蔬菜",k:34,carb:5.2,p:2.2,f:0.3,fiber:3.3,vc:0,ca:2,fe:0.3,zn:0.66,mg:11,pot:20},
+  {n:"金针菇",c:"蔬菜",k:32,carb:6,p:2.4,f:0.4,fiber:2.7,vc:0,ca:2,fe:0.4,zn:0.39,mg:17,pot:195},
+  {n:"海带",c:"蔬菜",k:13,carb:2.1,p:1.2,f:0.1,fiber:0.5,vc:0,ca:46,fe:0.9,zn:0.16,mg:25,pot:222},
+  {n:"杏鲍菇",c:"蔬菜",k:35,carb:8.3,p:1.3,f:0.1,fiber:2.1,vc:0,ca:13,fe:0.5,zn:0.6,mg:15,pot:242},
+  {n:"空心菜",c:"蔬菜",k:20,carb:3.6,p:2.2,f:0.3,fiber:1.4,vc:25,ca:99,fe:2.3,zn:0.5,mg:29,pot:243},
+  {n:"西葫芦",c:"蔬菜",k:18,carb:3.8,p:0.8,f:0.2,fiber:0.6,vc:6,ca:15,fe:0.3,zn:0.12,mg:9,pot:92},
+  {n:"冬瓜",c:"蔬菜",k:12,carb:2.6,p:0.4,f:0.2,fiber:0.7,vc:18,ca:19,fe:0.2,zn:0.07,mg:8,pot:78},
+  {n:"丝瓜",c:"蔬菜",k:20,carb:4.2,p:1,f:0.2,fiber:0.6,vc:5,ca:14,fe:0.4,zn:0.21,mg:11,pot:115},
+  {n:"芦笋",c:"蔬菜",k:19,carb:3.7,p:2.2,f:0.1,fiber:2.1,vc:6,ca:14,fe:0.6,zn:0.4,mg:10,pot:213},
+  {n:"油麦菜",c:"蔬菜",k:15,carb:2.1,p:1.4,f:0.4,fiber:0.6,vc:20,ca:70,fe:1.2,zn:0.43,mg:23,pot:164},
+  {n:"芹菜",c:"蔬菜",k:16,carb:3.9,p:0.7,f:0.1,fiber:1.4,vc:12,ca:48,fe:0.8,zn:0.46,mg:10,pot:154},
+  {n:"韭菜",c:"蔬菜",k:26,carb:4.6,p:2.4,f:0.4,fiber:1.4,vc:24,ca:42,fe:1.6,zn:0.43,mg:25,pot:247},
+  {n:"茼蒿",c:"蔬菜",k:24,carb:3.9,p:1.9,f:0.3,fiber:1.2,vc:18,ca:73,fe:2.5,zn:0.35,mg:20,pot:220},
+  {n:"苦瓜",c:"蔬菜",k:22,carb:4.9,p:1,f:0.1,fiber:1.4,vc:56,ca:14,fe:0.7,zn:0.36,mg:18,pot:256},
+  {n:"茄子",c:"蔬菜",k:25,carb:5.9,p:1.1,f:0.2,fiber:1.3,vc:5,ca:24,fe:0.5,zn:0.23,mg:14,pot:229},
+  {n:"豆角(豇豆)",c:"蔬菜",k:32,carb:6.7,p:2.5,f:0.2,fiber:2.1,vc:18,ca:42,fe:1,zn:0.54,mg:35,pot:200},
+  {n:"菜花",c:"蔬菜",k:26,carb:4.7,p:2.1,f:0.2,fiber:2.1,vc:61,ca:23,fe:0.7,zn:0.27,mg:15,pot:299},
+  {n:"芥蓝",c:"蔬菜",k:24,carb:3.6,p:2.8,f:0.4,fiber:1.6,vc:76,ca:128,fe:2,zn:0.5,mg:26,pot:260},
+  {n:"小白菜",c:"蔬菜",k:15,carb:2.4,p:1.5,f:0.3,fiber:1.1,vc:28,ca:90,fe:1.9,zn:0.51,mg:18,pot:178},
+  {n:"紫甘蓝",c:"蔬菜",k:25,carb:5.8,p:1.3,f:0.1,fiber:2.1,vc:41,ca:45,fe:0.5,zn:0.25,mg:15,pot:243},
+  {n:"莴笋",c:"蔬菜",k:15,carb:2.8,p:1,f:0.1,fiber:0.6,vc:4,ca:23,fe:0.9,zn:0.33,mg:14,pot:148},
+  {n:"香蕉",c:"水果",k:91,carb:22,p:1.4,f:0.2,fiber:2.6,vc:8,ca:7,fe:0.4,zn:0.18,mg:43,pot:256},
+  {n:"苹果",c:"水果",k:53,carb:13.7,p:0.2,f:0.2,fiber:2.4,vc:4,ca:4,fe:0.2,zn:0.04,mg:5,pot:119},
+  {n:"橙子",c:"水果",k:47,carb:12,p:0.9,f:0.1,fiber:2.4,vc:37,ca:20,fe:0.2,zn:0.14,mg:14,pot:159},
+  {n:"葡萄",c:"水果",k:43,carb:10.3,p:0.5,f:0.2,fiber:0.9,vc:3,ca:5,fe:0.4,zn:0.18,mg:9,pot:104},
+  {n:"蓝莓",c:"水果",k:57,carb:14,p:0.7,f:0.3,fiber:2.4,vc:9,ca:6,fe:0.3,zn:0.16,mg:6,pot:77},
+  {n:"树莓",c:"水果",k:52,carb:12,p:1.2,f:0.7,fiber:6.5,vc:26,ca:25,fe:0.7,zn:0.42,mg:22,pot:151},
+  {n:"西柚",c:"水果",k:33,carb:8.1,p:0.7,f:0.1,fiber:1.6,vc:34,ca:22,fe:0.1,zn:0.07,mg:9,pot:135},
+  {n:"牛油果",c:"水果",k:161,carb:8.5,p:2,f:15.3,fiber:6.7,vc:8,ca:12,fe:0.6,zn:0.64,mg:29,pot:485},
+  {n:"火龙果(白心)",c:"水果",k:55,carb:13.3,p:1.1,f:0.2,fiber:1.6,vc:3,ca:8,fe:0.3,zn:0.25,mg:30,pot:20},
+  {n:"猕猴桃",c:"水果",k:61,carb:14.5,p:0.8,f:0.6,fiber:2.6,vc:62,ca:27,fe:1.2,zn:0.57,mg:17,pot:312},
+  {n:"草莓",c:"水果",k:32,carb:7.7,p:0.7,f:0.3,fiber:2,vc:59,ca:16,fe:0.4,zn:0.14,mg:13,pot:153},
+  {n:"梨",c:"水果",k:51,carb:13.3,p:0.4,f:0.1,fiber:3.1,vc:6,ca:9,fe:0.3,zn:0.46,mg:7,pot:92},
+  {n:"桃",c:"水果",k:48,carb:12.2,p:0.9,f:0.1,fiber:1.3,vc:7,ca:6,fe:0.8,zn:0.34,mg:9,pot:166},
+  {n:"西瓜",c:"水果",k:31,carb:7.6,p:0.6,f:0.2,fiber:0.4,vc:8,ca:7,fe:0.4,zn:0.1,mg:10,pot:112},
+  {n:"木瓜",c:"水果",k:39,carb:9.8,p:0.4,f:0.1,fiber:1.7,vc:62,ca:20,fe:0.3,zn:0.1,mg:21,pot:182},
+  {n:"芒果",c:"水果",k:60,carb:15,p:0.8,f:0.4,fiber:1.6,vc:36,ca:11,fe:0.2,zn:0.09,mg:14,pot:138},
+  {n:"樱桃",c:"水果",k:46,carb:12,p:1.1,f:0.2,fiber:2.1,vc:10,ca:11,fe:0.4,zn:0.1,mg:12,pot:232},
+  {n:"杏仁",c:"坚果",k:575,carb:17,p:21.2,f:50.6,fiber:12,vc:0,ca:269,fe:3.7,zn:3.1,mg:270,pot:733},
+  {n:"核桃",c:"坚果",k:646,carb:10,p:14.9,f:65.2,fiber:9,vc:1,ca:98,fe:2.9,zn:3.09,mg:158,pot:441},
+  {n:"花生",c:"坚果",k:567,carb:16.2,p:25.8,f:44.3,fiber:8,vc:0,ca:39,fe:2.1,zn:2.5,mg:168,pot:587},
+  {n:"橄榄油",c:"坚果",k:899,carb:0,p:0,f:99.9,fiber:0,vc:0,ca:1,fe:0.1,zn:0,mg:0,pot:1},
+  {n:"腰果",c:"坚果",k:553,carb:30,p:18.2,f:43.9,fiber:3.3,vc:0,ca:37,fe:6.7,zn:5.78,mg:292,pot:660},
+  {n:"开心果",c:"坚果",k:560,carb:27.5,p:20.6,f:45.3,fiber:10.3,vc:0,ca:105,fe:4,zn:2.2,mg:121,pot:1025},
+  {n:"南瓜子",c:"坚果",k:574,carb:10.7,p:30.2,f:49.1,fiber:6,vc:0,ca:46,fe:8.8,zn:7.8,mg:592,pot:809},
+  {n:"黑芝麻",c:"坚果",k:559,carb:23.9,p:19.1,f:46.1,fiber:14,vc:0,ca:780,fe:22.7,zn:6.13,mg:290,pot:458},
+  {n:"奇亚籽",c:"坚果",k:486,carb:42,p:16.5,f:30.7,fiber:34.4,vc:0,ca:631,fe:7.7,zn:4.6,mg:335,pot:407}
 ];
 const byName = {}; foods.forEach(f=>byName[f.n]=f);
 
@@ -1531,7 +1607,14 @@ function calcCustom(opts){
     const fc2=finalG/100;
     const mC=p.f.carb*fc2, mP=p.f.p*fc2, mF=p.f.f*fc2;
     const mKcal=Math.round(mC*4+mP*4+mF*9);
-    const macroLine=`<span class="fmacro">蛋白 ${R(mP)}g · 碳水 ${R(mC)}g · 脂肪 ${R(mF)}g · ${mKcal}kcal</span>`;
+    // 三行卡：克组4格（碳水/蛋白/脂肪/膳食纤维）+ 毫克组6格（维C/钙/铁/锌/镁/钾），按最终克数同口径折算
+    const nf=(v)=>(v>0?R(v):'-');   // 0 显示 '-'，与参考表一致
+    const cell=(label,val,dim)=>`<span class="nutri-cell"><span class="nl">${label}</span><span class="nv${dim?' dim':''}">${val}</span></span>`;
+    const gGrid=`<div class="nutri-grid g">`+
+      cell('碳水g',R(mC))+cell('蛋白g',R(mP))+cell('脂肪g',R(mF))+cell('纤维g',nf((p.f.fiber||0)*fc2))+`</div>`;
+    const mgGrid=`<div class="nutri-grid mg">`+
+      cell('维Cmg',nf((p.f.vc||0)*fc2))+cell('钙mg',nf((p.f.ca||0)*fc2))+cell('铁mg',nf((p.f.fe||0)*fc2))+
+      cell('锌mg',nf((p.f.zn||0)*fc2))+cell('镁mg',nf((p.f.mg||0)*fc2))+cell('钾mg',nf((p.f.pot||0)*fc2))+`</div>`;
     let gCell;
     if(!p.add){
       // 用户选的食材：克数可编辑。基准推荐值只在首次计算记录一次，避免编辑后区间随锁定值漂移。
@@ -1560,8 +1643,9 @@ function calcCustom(opts){
       }
       gCell=`<span><span class="fg">${gShow} g</span>${needTag}</span>`;
     }
-    html+=`<div class="food-item"><span class="fn${addCls}${freeCls}">${p.name}${badge}<br><span style="font-size:11px;color:var(--muted)">${roleTag}</span>${macroLine}</span>`+
-      gCell+`</div>`;
+    html+=`<div class="food-item nutri-card">`+
+      `<div class="nutri-head"><span class="fn${addCls}${freeCls}">${p.name}${badge}<span class="nutri-cat">${roleTag} · ${mKcal}kcal</span></span>`+
+      gCell+`</div>`+gGrid+mgGrid+`</div>`;
   });
   const tKcal=Math.round(tgt.carb*4+tgt.prot*4+tgt.fat*9);
   const diffTag=(a,t)=>{ if(!t) return ''; const pct=Math.round((a-t)/t*100);
@@ -1724,11 +1808,28 @@ function resetGramEdits(){
 }
 
 /* 从库中挑一种该角色密度高、且未被选中的食材，给出建议份量 */
+/* 自动补配推荐候选池：固定为初版55种核心食物(按原顺序)。
+   扩充食物库后，新增食物仅供用户手动输入参与配平，不进入自动推荐池，
+   以保证自动补配结果与旧版完全一致（零回归）。 */
+const SUGGEST_ORDER = [
+  "米饭(熟)","面条(煮)","馒头","全麦面包","燕麦",
+  "红薯","玉米","土豆","贝贝南瓜","鸡胸肉",
+  "牛肉(瘦)","猪肉(瘦)","羊肉","三文鱼","虾仁",
+  "鸡蛋","牛奶(全脂)","酸奶(原味)","豆腐","豆浆",
+  "西兰花","菠菜","胡萝卜","黄瓜","番茄",
+  "洋葱","生菜","彩椒","香蕉","苹果",
+  "橙子","葡萄","蓝莓","杏仁","核桃",
+  "花生","山药","紫薯","蛋清","豆干",
+  "香菇","金针菇","海带","杏鲍菇","空心菜",
+  "西葫芦","冬瓜","丝瓜","芦笋","树莓",
+  "西柚","牛油果","火龙果(白心)","猕猴桃","橄榄油",
+];
 function pickSuggest(roleKey, usedNames){
   const roleFilter = f => roleKey==='carb'? f.carb>=20 : roleKey==='prot'? f.p>=18 : f.f>=20;
-  const cand = foods.filter(f=>roleFilter(f) && !usedNames.includes(foodName(f)));
-  const pool = cand.length? cand : foods.filter(f=>roleFilter(f));
-  const f = pool[0] || foods[0];
+  const coreFoods = SUGGEST_ORDER.map(n=>byName[n]).filter(Boolean);
+  const cand = coreFoods.filter(f=>roleFilter(f) && !usedNames.includes(foodName(f)));
+  const pool = cand.length? cand : coreFoods.filter(f=>roleFilter(f));
+  const f = pool[0] || coreFoods[0];
   // 建议份量：补足约 20-30g 该宏量
   const per100 = f[roleKey==='carb'?'carb':roleKey==='prot'?'p':'f'];
   const targetMacro = roleKey==='carb'?25:roleKey==='prot'?25:15;
@@ -1740,13 +1841,15 @@ function pickSuggest(roleKey, usedNames){
 const fbody = document.getElementById('foodBody');
 function renderTable(cat){
   fbody.innerHTML='';
+  const dash=v=>(v>0?String(v):'-');
   foods.filter(x=>cat==='all'||x.c===cat).forEach(x=>{
-    const vc = x.vc>0?`<span class="hi">${x.vc}</span>`:'—';
-    const fiber = x.fiber>0?x.fiber:'—';
+    const vc = x.vc>0?`<span class="hi">${x.vc}</span>`:'-';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="fname">${x.n}</span><span class="ctag">${x.c}</span></td>`+
+    tr.innerHTML=`<td class="c-food"><span class="fname">${x.n}</span><span class="ctag">${x.c}</span></td>`+
       `<td class="num">${x.k}</td><td class="num">${x.carb}</td><td class="num">${x.p}</td>`+
-      `<td class="num">${x.f}</td><td class="num">${fiber}</td><td class="num">${vc}</td>`;
+      `<td class="num">${x.f}</td><td class="num">${dash(x.fiber)}</td><td class="num">${vc}</td>`+
+      `<td class="num">${dash(x.ca)}</td><td class="num">${dash(x.fe)}</td><td class="num">${dash(x.zn)}</td>`+
+      `<td class="num">${dash(x.mg)}</td><td class="num">${dash(x.pot)}</td>`;
     fbody.appendChild(tr);
   });
 }
@@ -1771,7 +1874,7 @@ renderCustomHist();
    （no-store + 随机参数，绕开 iOS PWA 缓存），解析出线上版本号，与本地不一致即提示。
    file:// 本地预览 / 离线 / 请求失败 / 无 DOM 环境（自检 mock）一律静默降级。 */
 (function(){
-  var APP_VER='20261117-1107';
+  var APP_VER='20261123-1119';
   var SKIP_KEY='mealAppSkipVer_v1';
   var last=0, busy=false, remoteVer='';
   try{
